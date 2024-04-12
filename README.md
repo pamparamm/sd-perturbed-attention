@@ -30,6 +30,6 @@ Currently not implemented. PRs are welcome!
 ## Parameters
 
 - `scale`: PAG scale, has some resemblance to CFG scale - higher values can both increase structural coherence of the image and oversaturate/fry it entirely.
-- `adaptive_scale`: PAG dampening factor, it penalizes PAG during early denoising stages, resulting in overall speedup. Should be << than `scale`.
+- `adaptive_scale`: PAG dampening factor, it penalizes PAG during late denoising stages, resulting in overall speedup. Should be << than `scale`.
 - `unet_block`: Part of U-Net to which PAG is applied, original paper suggests to use `middle`.
 - `unet_block_id`: Id of U-Net layer in a selected block to which PAG is applied. PAG can be applied only to layers containing Self-attention blocks.
