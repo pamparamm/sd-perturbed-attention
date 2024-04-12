@@ -21,7 +21,7 @@ class PerturbedAttention:
             "required": {
                 "model": ("MODEL",),
                 "scale": ("FLOAT", {"default": 3.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01}),
-                "adaptive_scale": ("FLOAT", {"default": 3.0, "min": 0.0, "max": 100.0, "step": 0.01, "round": 0.01}),
+                "adaptive_scale": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 100.0, "step": 0.001, "round": 0.0001}),
                 "unet_block": (["input", "middle", "output"], {"default": "middle"}),
                 "unet_block_id": ("INT", {"default": 0}),
             }
@@ -32,7 +32,7 @@ class PerturbedAttention:
 
     CATEGORY = "advanced/model"
 
-    def patch(self, model: ModelPatcher, scale: float, adaptive_scale: float, unet_block: str, unet_block_id: int):
+    def patch(self, model: ModelPatcher, scale: float = 3.0, adaptive_scale: float = 0.0, unet_block: str = "middle", unet_block_id: int = 0):
         m = model.clone()
 
         def perturbed_attention(q: Tensor, k: Tensor, v: Tensor, extra_options, mask=None):
@@ -41,8 +41,6 @@ class PerturbedAttention:
 
         def post_cfg_function(args):
             """CFG+PAG"""
-            pag_scale = scale
-
             model = args["model"]
             cond_pred = args["cond_denoised"]
             cond = args["cond"]
@@ -51,7 +49,14 @@ class PerturbedAttention:
             model_options = args["model_options"]
             x = args["input"]
 
-            if pag_scale == 0:
+            signal_scale = scale
+            if adaptive_scale > 0:
+                t = model.model_sampling.timestep(sigma)
+                signal_scale -= adaptive_scale * (1000 - t)
+                if signal_scale < 0:
+                    signal_scale = 0
+
+            if signal_scale == 0:
                 return cfg_result
 
             try:
@@ -64,12 +69,6 @@ class PerturbedAttention:
             finally:
                 m.model_options["transformer_options"]["patches_replace"]["attn1"].pop((unet_block, unet_block_id))
 
-            signal_scale = pag_scale
-            if adaptive_scale > 0:
-                t = model.model_sampling.timestep(sigma)
-                signal_scale -= adaptive_scale * (1000-t)
-                if signal_scale < 0:
-                    signal_scale = 0
             return cfg_result + (cond_pred - pag) * signal_scale
 
         m.set_model_sampler_post_cfg_function(post_cfg_function, disable_cfg1_optimization=True)

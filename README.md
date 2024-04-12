@@ -8,9 +8,9 @@ Tested to work with SD1.5 and SDXL.
 > [!NOTE]
 > Paper and demo suggest using CFG scale 4.0 with PAG scale 3.0 applied to U-Net's middle layer 0, but feel free to experiment.
 >
-> Sampling speed is similar to Self-Attention Guidance (x0.6 of usual it/s).
+> Sampling speed without `adaptive_scale` is similar to Self-Attention Guidance (x0.6 of usual it/s).
 
-## Installation and Usage
+## Installation
 
 ### ComfyUI
 
@@ -26,3 +26,10 @@ Tested to work with SD1.5 and SDXL.
 
 ### SD WebUI (Auto1111)
 Currently not implemented. PRs are welcome!
+
+## Parameters
+
+- `scale`: PAG scale, has some resemblance to CFG scale - higher values can both increase structural coherence of the image and oversaturate/fry it entirely.
+- `adaptive_scale`: PAG dampening factor, it penalizes PAG during early denoising stages, resulting in overall speedup. Should be << than `scale`.
+- `unet_block`: Part of U-Net to which PAG is applied, original paper suggests to use `middle`.
+- `unet_block_id`: Id of U-Net layer in a selected block to which PAG is applied. PAG can be applied only to layers containing Self-attention blocks.
