@@ -21,7 +21,7 @@ class PerturbedAttention:
             "required": {
                 "model": ("MODEL",),
                 "scale": ("FLOAT", {"default": 3.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01}),
-                "adaptive_scale": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 100.0, "step": 0.001, "round": 0.0001}),
+                "adaptive_scale": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001, "round": 0.0001}),
                 "unet_block": (["input", "middle", "output"], {"default": "middle"}),
                 "unet_block_id": ("INT", {"default": 0}),
             }
@@ -52,7 +52,7 @@ class PerturbedAttention:
             signal_scale = scale
             if adaptive_scale > 0:
                 t = model.model_sampling.timestep(sigma)
-                signal_scale -= adaptive_scale * (1000 - t)
+                signal_scale -= scale * (adaptive_scale**4) * (1000 - t)
                 if signal_scale < 0:
                     signal_scale = 0
 
