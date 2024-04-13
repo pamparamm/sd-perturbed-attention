@@ -25,7 +25,7 @@ Tested to work with SD1.5 and SDXL.
 ![forge-script](examples/forge-script.png)
 
 ### SD WebUI (Auto1111)
-Currently not implemented. PRs are welcome!
+Use PAG implementation from [sd-webui-incantations](https://github.com/v0xie/sd-webui-incantations) extension.
 
 ## Parameters
 
