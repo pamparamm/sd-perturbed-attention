@@ -3,7 +3,7 @@
 Implementation of [Self-Rectifying Diffusion Sampling
 with Perturbed-Attention Guidance (D. Ahn et al.)](https://ku-cvlab.github.io/Perturbed-Attention-Guidance/) as an extension for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and [SD WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge).
 
-Tested to work with SD1.5 and SDXL.
+Works with SD1.5, SDXL and Stable Cascade.
 
 > [!NOTE]
 > Paper and demo suggest using CFG scale 4.0 with PAG scale 3.0 applied to U-Net's middle layer 0, but feel free to experiment.
