@@ -1,4 +1,4 @@
-from .scripts.pag_nodes import PerturbedAttention
+from .pag_nodes import PerturbedAttention
 
 NODE_CLASS_MAPPINGS = {
     "PerturbedAttention": PerturbedAttention,

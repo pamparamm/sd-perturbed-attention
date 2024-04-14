@@ -1,5 +1,5 @@
 try:
-    from scripts import pag_nodes
+    import pag_nodes
 
     if pag_nodes.BACKEND == "Forge":
         import gradio as gr
