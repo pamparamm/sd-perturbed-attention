@@ -12,11 +12,17 @@ Works with SD1.5, SDXL and Stable Cascade.
 
 ## Installation
 
-### ComfyUI
+### ComfyUI (Basic node)
+
+Basic PAG node is now included into ComfyUI - you don't have to install this extension unless you want to mess with additional parameters.
+
+![comfyui-node-basic](examples/comfyui-node-basic.png)
+
+### ComfyUI (Advanced node)
 
 `git clone https://github.com/pamparamm/sd-perturbed-attention.git` into `ComfyUI/custom-nodes/` folder.
 
-![comfyui-node](examples/comfyui-node.png)
+![comfyui-node-advanced](examples/comfyui-node-advanced.png)
 
 ### SD WebUI (Forge)
 
@@ -25,7 +31,8 @@ Works with SD1.5, SDXL and Stable Cascade.
 ![forge-script](examples/forge-script.png)
 
 ### SD WebUI (Auto1111)
-Use PAG implementation from [sd-webui-incantations](https://github.com/v0xie/sd-webui-incantations) extension.
+
+Under development, for now use PAG implementation from [sd-webui-incantations](https://github.com/v0xie/sd-webui-incantations) extension.
 
 ## Parameters
 

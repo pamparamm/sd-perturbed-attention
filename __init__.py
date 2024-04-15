@@ -5,5 +5,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PerturbedAttention": "Perturbed-Attention Guidance",
+    "PerturbedAttention": "Perturbed-Attention Guidance (Advanced)",
 }

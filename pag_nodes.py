@@ -5,11 +5,16 @@ BACKEND = None
 try:
     from comfy.model_patcher import ModelPatcher
     from comfy.samplers import calc_cond_batch
+    try:
+        from comfy.model_patcher import set_model_options_patch_replace
+    except ImportError:
+        from .pag_utils import set_model_options_patch_replace
 
     BACKEND = "ComfyUI"
 except ImportError:
     from ldm_patched.modules.model_patcher import ModelPatcher
     from ldm_patched.modules.samplers import calc_cond_uncond_batch
+    from pag_utils import set_model_options_patch_replace
 
     BACKEND = "Forge"
 
@@ -46,7 +51,7 @@ class PerturbedAttention:
             cond = args["cond"]
             cfg_result = args["denoised"]
             sigma = args["sigma"]
-            model_options = args["model_options"]
+            model_options = args["model_options"].copy()
             x = args["input"]
 
             signal_scale = scale
@@ -59,15 +64,12 @@ class PerturbedAttention:
             if signal_scale == 0:
                 return cfg_result
 
-            try:
-                # Replace Self-attention with PAG
-                m.set_model_attn1_replace(perturbed_attention, unet_block, unet_block_id)
-                if BACKEND == "ComfyUI":
-                    (pag,) = calc_cond_batch(model, [cond], x, sigma, model_options)
-                if BACKEND == "Forge":
-                    (pag, _) = calc_cond_uncond_batch(model, cond, None, x, sigma, model_options)
-            finally:
-                m.model_options["transformer_options"]["patches_replace"]["attn1"].pop((unet_block, unet_block_id))
+            # Replace Self-attention with PAG
+            model_options = set_model_options_patch_replace(model_options, perturbed_attention, "attn1", unet_block, unet_block_id)
+            if BACKEND == "ComfyUI":
+                (pag,) = calc_cond_batch(model, [cond], x, sigma, model_options)
+            if BACKEND == "Forge":
+                (pag, _) = calc_cond_uncond_batch(model, cond, None, x, sigma, model_options)
 
             return cfg_result + (cond_pred - pag) * signal_scale
 
