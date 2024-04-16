@@ -30,6 +30,10 @@ Basic PAG node is now included into ComfyUI - you don't have to install this ext
 
 ![forge-script](examples/forge-script.png)
 
+> [!NOTE]
+> You can override `CFG Scale` and `PAG Scale` for Hires. fix by opening/enabling `Override for Hires. fix` section.
+> To disable PAG during Hires. fix, set `PAG Scale` to 0.
+
 ### SD WebUI (Auto1111)
 
 Under development, for now use PAG implementation from [sd-webui-incantations](https://github.com/v0xie/sd-webui-incantations) extension.
