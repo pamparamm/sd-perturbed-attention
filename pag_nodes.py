@@ -18,6 +18,20 @@ except ImportError:
 
     BACKEND = "Forge"
 
+def get_sigmin_sigmax(model):
+    model_sampling = model.model.model_sampling
+    sigmin = model_sampling.sigma(model_sampling.timestep(model_sampling.sigma_min))
+    sigmax = model_sampling.sigma(model_sampling.timestep(model_sampling.sigma_max))
+    return sigmin, sigmax
+
+def get_sigmas_start_end(model, start_percentage, end_percentage):
+    sigmin, sigmax = get_sigmin_sigmax(model)
+    high_sigma_threshold = (sigmax - sigmin) / 100 * start_percentage
+    low_sigma_threshold  = (sigmax - sigmin) / 100 * end_percentage
+    return high_sigma_threshold, low_sigma_threshold
+
+def check_skip(sigma, high_sigma_threshold, low_sigma_threshold):
+    return sigma > high_sigma_threshold or sigma < low_sigma_threshold
 
 class PerturbedAttention:
     @classmethod
@@ -29,6 +43,8 @@ class PerturbedAttention:
                 "adaptive_scale": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001, "round": 0.0001}),
                 "unet_block": (["input", "middle", "output"], {"default": "middle"}),
                 "unet_block_id": ("INT", {"default": 0}),
+                "sigma_start_percentage": ("FLOAT", {"default": 100.0, "min": 0.0, "max": 100.0, "step": 0.01, "round": 0.01}),
+                "sigma_end_percentage": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 100.0, "step": 0.01, "round": 0.01}),
             }
         }
 
@@ -37,9 +53,11 @@ class PerturbedAttention:
 
     CATEGORY = "advanced/model"
 
-    def patch(self, model: ModelPatcher, scale: float = 3.0, adaptive_scale: float = 0.0, unet_block: str = "middle", unet_block_id: int = 0):
+    def patch(self, model: ModelPatcher, scale: float = 3.0, adaptive_scale: float = 0.0, unet_block: str = "middle", unet_block_id: int = 0,
+              sigma_start_percentage: float = 100.0,   sigma_end_percentage: float = 0.0):
         m = model.clone()
-
+        
+        sigma_start, sigma_end = get_sigmas_start_end(model, sigma_start_percentage, sigma_end_percentage)
         def perturbed_attention(q: Tensor, k: Tensor, v: Tensor, extra_options, mask=None):
             """Perturbed self-attention"""
             return v
@@ -61,7 +79,7 @@ class PerturbedAttention:
                 if signal_scale < 0:
                     signal_scale = 0
 
-            if signal_scale == 0:
+            if signal_scale == 0 or check_skip(sigma[0],sigma_start,sigma_end):
                 return cfg_result
 
             # Replace Self-attention with PAG
