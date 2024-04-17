@@ -40,13 +40,14 @@ try:
 
                 unet = p.sd_model.forge_objects.unet
 
-                if p.is_hr_pass and hr_override:
+                hr_enabled = getattr(p, "enable_hr", False)
+
+                if hr_enabled and p.is_hr_pass and hr_override:
                     p.cfg_scale_before_hr = p.cfg_scale
                     p.cfg_scale = hr_cfg
-                    scale = hr_scale
-                    adaptive_scale = hr_adaptive_scale
-
-                unet = opPerturbedAttention.patch(unet, scale, adaptive_scale, block, block_id)[0]
+                    unet = opPerturbedAttention.patch(unet, hr_scale, hr_adaptive_scale, block, block_id)[0]
+                else:
+                    unet = opPerturbedAttention.patch(unet, scale, adaptive_scale, block, block_id)[0]
 
                 p.sd_model.forge_objects.unet = unet
 
@@ -59,7 +60,7 @@ try:
                         pag_block_id=block_id,
                     )
                 )
-                if p.enable_hr:
+                if hr_enabled:
                     p.extra_generation_params["pag_hr_override"] = hr_override
                     if hr_override:
                         p.extra_generation_params.update(
@@ -78,7 +79,9 @@ try:
                 if not enabled:
                     return
 
-                if p.enable_hr and hr_override:
+                hr_enabled = getattr(p, "enable_hr", False)
+
+                if hr_enabled and hr_override:
                     p.cfg_scale = p.cfg_scale_before_hr
 
                 return
