@@ -1,7 +1,6 @@
-# Perturbed-Attention Guidance for ComfyUI/Forge
+# Perturbed-Attention Guidance for ComfyUI / SD WebUI (A1111 and Forge)
 
-Implementation of [Self-Rectifying Diffusion Sampling
-with Perturbed-Attention Guidance (D. Ahn et al.)](https://ku-cvlab.github.io/Perturbed-Attention-Guidance/) as an extension for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and [SD WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge).
+Implementation of [Self-Rectifying Diffusion Sampling with Perturbed-Attention Guidance (D. Ahn et al.)](https://ku-cvlab.github.io/Perturbed-Attention-Guidance/) as an extension for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and SD WebUI ([A1111](https://github.com/AUTOMATIC1111/stable-diffusion-webui) and [Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge))
 
 Works with SD1.5, SDXL and Stable Cascade.
 
@@ -12,31 +11,34 @@ Works with SD1.5, SDXL and Stable Cascade.
 
 ## Installation
 
-### ComfyUI (Basic node)
+### ComfyUI
 
 Basic PAG node is now included into ComfyUI - you don't have to install this extension unless you want to mess with additional parameters.
 
 ![comfyui-node-basic](examples/comfyui-node-basic.png)
 
-### ComfyUI (Advanced node)
+To install advanced PAG node from this repo, you can either:
 
-`git clone https://github.com/pamparamm/sd-perturbed-attention.git` into `ComfyUI/custom-nodes/` folder.
+- `git clone https://github.com/pamparamm/sd-perturbed-attention.git` into `ComfyUI/custom-nodes/` folder.
+
+- Install it via [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager) (search for custom node named "Perturbed-Attention Guidance").
 
 ![comfyui-node-advanced](examples/comfyui-node-advanced.png)
 
-### SD WebUI (Forge)
+### SD WebUI (A1111 and Forge)
 
-`git clone https://github.com/pamparamm/sd-perturbed-attention.git` into `stable-diffusion-webui-forge/extensions/` folder.
+`git clone https://github.com/pamparamm/sd-perturbed-attention.git` into `stable-diffusion-webui/extensions/` folder.
 
-![forge-script](examples/forge-script.png)
+> [!WARNING]
+> Extension for A1111 WebUI is still under development - only `Scale` works for now.
+
+![webui-script](examples/webui-script.png)
 
 > [!NOTE]
-> You can override `CFG Scale` and `PAG Scale` for Hires. fix by opening/enabling `Override for Hires. fix` section.
-> To disable PAG during Hires. fix, set `PAG Scale` to 0.
+> You can override `CFG Scale` and `PAG Scale` for Hires. fix by opening/enabling `Override for Hires. fix` tab.
+> To disable PAG during Hires. fix, set `PAG Scale` under Override to 0.
 
-### SD WebUI (Auto1111)
-
-Under development, for now use PAG implementation from [sd-webui-incantations](https://github.com/v0xie/sd-webui-incantations) extension.
+As an alternative for A1111 WebUI you can use PAG implementation from [sd-webui-incantations](https://github.com/v0xie/sd-webui-incantations) extension.
 
 ## Parameters
 
