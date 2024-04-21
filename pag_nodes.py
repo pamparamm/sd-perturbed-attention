@@ -29,6 +29,8 @@ class PerturbedAttention:
                 "adaptive_scale": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001, "round": 0.0001}),
                 "unet_block": (["input", "middle", "output"], {"default": "middle"}),
                 "unet_block_id": ("INT", {"default": 0}),
+                "sigma_start": ("FLOAT", {"default": 15.0, "min": 0.0, "max": 1000.0, "step": 0.1, "round": 0.1}),
+                "sigma_end": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1000.0, "step": 0.1, "round": 0.1}),
             }
         }
 
@@ -37,7 +39,7 @@ class PerturbedAttention:
 
     CATEGORY = "advanced/model"
 
-    def patch(self, model: ModelPatcher, scale: float = 3.0, adaptive_scale: float = 0.0, unet_block: str = "middle", unet_block_id: int = 0):
+    def patch(self, model: ModelPatcher, scale: float = 3.0, adaptive_scale: float = 0.0, unet_block: str = "middle", unet_block_id: int = 0, sigma_start: float = 15.0, sigma_end: float = 0.0):
         m = model.clone()
 
         def perturbed_attention(q: Tensor, k: Tensor, v: Tensor, extra_options, mask=None):
@@ -61,7 +63,7 @@ class PerturbedAttention:
                 if signal_scale < 0:
                     signal_scale = 0
 
-            if signal_scale == 0:
+            if signal_scale == 0 or sigma[0] > sigma_start or sigma[0] < sigma_end:
                 return cfg_result
 
             # Replace Self-attention with PAG
