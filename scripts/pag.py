@@ -29,11 +29,26 @@ try:
                     with gr.Row():
                         block = gr.Dropdown(choices=["input", "middle", "output"], value="middle", label="U-Net Block")
                         block_id = gr.Number(label="U-Net Block Id", value=0, precision=0, minimum=0)
+                    with gr.Row():
+                        sigma_start = gr.Number(minimum=-1.0, label="Sigma Start", value=-1.0)
+                        sigma_end = gr.Number(minimum=-1.0, label="Sigma End", value=-1.0)
 
-                return enabled, scale, adaptive_scale, block, block_id, hr_override, hr_cfg, hr_scale, hr_adaptive_scale
+                return enabled, scale, adaptive_scale, block, block_id, hr_override, hr_cfg, hr_scale, hr_adaptive_scale, sigma_start, sigma_end
 
             def process_before_every_sampling(self, p, *script_args, **kwargs):
-                enabled, scale, adaptive_scale, block, block_id, hr_override, hr_cfg, hr_scale, hr_adaptive_scale = script_args
+                (
+                    enabled,
+                    scale,
+                    adaptive_scale,
+                    block,
+                    block_id,
+                    hr_override,
+                    hr_cfg,
+                    hr_scale,
+                    hr_adaptive_scale,
+                    sigma_start,
+                    sigma_end,
+                ) = script_args
 
                 if not enabled:
                     return
@@ -45,9 +60,9 @@ try:
                 if hr_enabled and p.is_hr_pass and hr_override:
                     p.cfg_scale_before_hr = p.cfg_scale
                     p.cfg_scale = hr_cfg
-                    unet = opPerturbedAttention.patch(unet, hr_scale, hr_adaptive_scale, block, block_id)[0]
+                    unet = opPerturbedAttention.patch(unet, hr_scale, hr_adaptive_scale, block, block_id, sigma_start, sigma_end)[0]
                 else:
-                    unet = opPerturbedAttention.patch(unet, scale, adaptive_scale, block, block_id)[0]
+                    unet = opPerturbedAttention.patch(unet, scale, adaptive_scale, block, block_id, sigma_start, sigma_end)[0]
 
                 p.sd_model.forge_objects.unet = unet
 
@@ -70,11 +85,30 @@ try:
                                 pag_hr_adaptive_scale=hr_adaptive_scale,
                             )
                         )
+                if sigma_start >= 0 or sigma_end >= 0:
+                    p.extra_generation_params.update(
+                        dict(
+                            pag_sigma_start=sigma_start,
+                            pag_sigma_end=sigma_end,
+                        )
+                    )
 
                 return
 
             def post_sample(self, p, ps, *script_args):
-                enabled, scale, adaptive_scale, block, block_id, hr_override, hr_cfg, hr_scale, hr_adaptive_scale = script_args
+                (
+                    enabled,
+                    scale,
+                    adaptive_scale,
+                    block,
+                    block_id,
+                    hr_override,
+                    hr_cfg,
+                    hr_scale,
+                    hr_adaptive_scale,
+                    sigma_start,
+                    sigma_end,
+                ) = script_args
 
                 if not enabled:
                     return

@@ -1,26 +1,27 @@
-# Perturbed-Attention Guidance for ComfyUI/Forge
+# Perturbed-Attention Guidance for ComfyUI / SD WebUI (Forge)
 
-Implementation of [Self-Rectifying Diffusion Sampling
-with Perturbed-Attention Guidance (D. Ahn et al.)](https://ku-cvlab.github.io/Perturbed-Attention-Guidance/) as an extension for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and [SD WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge).
+Implementation of [Self-Rectifying Diffusion Sampling with Perturbed-Attention Guidance (D. Ahn et al.)](https://ku-cvlab.github.io/Perturbed-Attention-Guidance/) as an extension for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and [SD WebUI (Forge)](https://github.com/lllyasviel/stable-diffusion-webui-forge).
 
 Works with SD1.5, SDXL and Stable Cascade.
 
 > [!NOTE]
 > Paper and demo suggest using CFG scale 4.0 with PAG scale 3.0 applied to U-Net's middle layer 0, but feel free to experiment.
 >
-> Sampling speed without `adaptive_scale` is similar to Self-Attention Guidance (x0.6 of usual it/s).
+> Sampling speed without `adaptive_scale` or `sigma_start` / `sigma_end` is similar to Self-Attention Guidance (x0.6 of usual it/s).
 
 ## Installation
 
-### ComfyUI (Basic node)
+### ComfyUI
 
 Basic PAG node is now included into ComfyUI - you don't have to install this extension unless you want to mess with additional parameters.
 
 ![comfyui-node-basic](examples/comfyui-node-basic.png)
 
-### ComfyUI (Advanced node)
+To install the advanced PAG node from this repo, you can either:
 
-`git clone https://github.com/pamparamm/sd-perturbed-attention.git` into `ComfyUI/custom-nodes/` folder.
+- `git clone https://github.com/pamparamm/sd-perturbed-attention.git` into `ComfyUI/custom-nodes/` folder.
+
+- Install it via [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager) (search for custom node named "Perturbed-Attention Guidance").
 
 ![comfyui-node-advanced](examples/comfyui-node-advanced.png)
 
@@ -31,12 +32,12 @@ Basic PAG node is now included into ComfyUI - you don't have to install this ext
 ![forge-script](examples/forge-script.png)
 
 > [!NOTE]
-> You can override `CFG Scale` and `PAG Scale` for Hires. fix by opening/enabling `Override for Hires. fix` section.
-> To disable PAG during Hires. fix, set `PAG Scale` to 0.
+> You can override `CFG Scale` and `PAG Scale` for Hires. fix by opening/enabling `Override for Hires. fix` tab.
+> To disable PAG during Hires. fix, set `PAG Scale` under Override to 0.
 
 ### SD WebUI (Auto1111)
 
-Under development, for now use PAG implementation from [sd-webui-incantations](https://github.com/v0xie/sd-webui-incantations) extension.
+As an alternative for A1111 WebUI you can use PAG implementation from [sd-webui-incantations](https://github.com/v0xie/sd-webui-incantations) extension.
 
 ## Parameters
 
@@ -44,3 +45,4 @@ Under development, for now use PAG implementation from [sd-webui-incantations](h
 - `adaptive_scale`: PAG dampening factor, it penalizes PAG during late denoising stages, resulting in overall speedup: 0.0 means no penalty and 1.0 completely removes PAG.
 - `unet_block`: Part of U-Net to which PAG is applied, original paper suggests to use `middle`.
 - `unet_block_id`: Id of U-Net layer in a selected block to which PAG is applied. PAG can be applied only to layers containing Self-attention blocks.
+- `sigma_start` / `sigma_end`: PAG will not be active before `sigma_start` or after `sigma_end`. Use negative values to disable this feature.
