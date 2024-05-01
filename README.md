@@ -45,4 +45,5 @@ As an alternative for A1111 WebUI you can use PAG implementation from [sd-webui-
 - `adaptive_scale`: PAG dampening factor, it penalizes PAG during late denoising stages, resulting in overall speedup: 0.0 means no penalty and 1.0 completely removes PAG.
 - `unet_block`: Part of U-Net to which PAG is applied, original paper suggests to use `middle`.
 - `unet_block_id`: Id of U-Net layer in a selected block to which PAG is applied. PAG can be applied only to layers containing Self-attention blocks.
-- `sigma_start` / `sigma_end`: PAG will not be active before `sigma_start` or after `sigma_end`. Use negative values to disable this feature.
+- `sigma_start` / `sigma_end`: PAG will be active only between `sigma_start` and `sigma_end`. Use negative values to disable this feature.
+- `rescale_pag`: Acts similar to RescaleCFG node - it prevents over-exposure on high `scale` values. Based on Algorithm 2 from [Common Diffusion Noise Schedules and Sample Steps are Flawed (Lin et al.)](https://arxiv.org/abs/2305.08891).

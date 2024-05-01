@@ -5,6 +5,7 @@ BACKEND = None
 try:
     from comfy.model_patcher import ModelPatcher
     from comfy.samplers import calc_cond_batch
+    from .pag_utils import rescale_pag
 
     try:
         from comfy.model_patcher import set_model_options_patch_replace
@@ -15,7 +16,7 @@ try:
 except ImportError:
     from ldm_patched.modules.model_patcher import ModelPatcher
     from ldm_patched.modules.samplers import calc_cond_uncond_batch
-    from pag_utils import set_model_options_patch_replace
+    from pag_utils import set_model_options_patch_replace, rescale_pag
 
     BACKEND = "Forge"
 
@@ -32,6 +33,7 @@ class PerturbedAttention:
                 "unet_block_id": ("INT", {"default": 0}),
                 "sigma_start": ("FLOAT", {"default": -1.0, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
                 "sigma_end": ("FLOAT", {"default": -1.0, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
+                "rescale": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
             }
         }
 
@@ -49,10 +51,11 @@ class PerturbedAttention:
         unet_block_id: int = 0,
         sigma_start: float = -1.0,
         sigma_end: float = -1.0,
+        rescale: float = 0.0,
     ):
         m = model.clone()
 
-        sigma_start = float('inf') if sigma_start < 0 else sigma_start
+        sigma_start = float("inf") if sigma_start < 0 else sigma_start
 
         def perturbed_attention(q: Tensor, k: Tensor, v: Tensor, extra_options, mask=None):
             """Perturbed self-attention"""
@@ -81,11 +84,13 @@ class PerturbedAttention:
             # Replace Self-attention with PAG
             model_options = set_model_options_patch_replace(model_options, perturbed_attention, "attn1", unet_block, unet_block_id)
             if BACKEND == "ComfyUI":
-                (pag,) = calc_cond_batch(model, [cond], x, sigma, model_options)
+                (pag_cond_pred,) = calc_cond_batch(model, [cond], x, sigma, model_options)
             if BACKEND == "Forge":
-                (pag, _) = calc_cond_uncond_batch(model, cond, None, x, sigma, model_options)
+                (pag_cond_pred, _) = calc_cond_uncond_batch(model, cond, None, x, sigma, model_options)
 
-            return cfg_result + (cond_pred - pag) * signal_scale
+            pag = (cond_pred - pag_cond_pred) * signal_scale
+
+            return cfg_result + rescale_pag(pag, cond_pred, rescale)
 
         m.set_model_sampler_post_cfg_function(post_cfg_function, disable_cfg1_optimization=False)
 
