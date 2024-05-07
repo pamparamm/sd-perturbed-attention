@@ -34,6 +34,7 @@ class PerturbedAttention:
                 "sigma_start": ("FLOAT", {"default": -1.0, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
                 "sigma_end": ("FLOAT", {"default": -1.0, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
                 "rescale": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "rescale_mode": (["full", "partial"], {"default": "full"}),
             }
         }
 
@@ -52,6 +53,7 @@ class PerturbedAttention:
         sigma_start: float = -1.0,
         sigma_end: float = -1.0,
         rescale: float = 0.0,
+        rescale_mode: str = "full",
     ):
         m = model.clone()
 
@@ -90,7 +92,7 @@ class PerturbedAttention:
 
             pag = (cond_pred - pag_cond_pred) * signal_scale
 
-            return cfg_result + rescale_pag(pag, cond_pred, rescale)
+            return cfg_result + rescale_pag(pag, cond_pred, cfg_result, rescale, rescale_mode)
 
         m.set_model_sampler_post_cfg_function(post_cfg_function, disable_cfg1_optimization=False)
 

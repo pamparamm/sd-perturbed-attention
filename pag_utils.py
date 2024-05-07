@@ -25,12 +25,18 @@ def set_model_options_patch_replace(model_options, patch, name, block_name, numb
 
 
 # Modified 'Algorithm 2 Classifier-Free Guidance with Rescale' from Common Diffusion Noise Schedules and Sample Steps are Flawed (Lin et al.).
-def rescale_pag(pag: torch.Tensor, cond_pred: torch.Tensor, rescale=0.0):
+def rescale_pag(pag: torch.Tensor, cond_pred: torch.Tensor, cfg_result: torch.Tensor, rescale=0.0, rescale_mode="full"):
     if rescale == 0.0:
         return pag
 
+    match rescale_mode:
+        case "full":
+            pag_result = cfg_result + pag
+        case _:
+            pag_result = cond_pred + pag
+
     std_cond = torch.std(cond_pred, dim=(1, 2, 3), keepdim=True)
-    std_pag = torch.std(cond_pred + pag, dim=(1, 2, 3), keepdim=True)
+    std_pag = torch.std(pag_result, dim=(1, 2, 3), keepdim=True)
 
     factor = std_cond / std_pag
     factor = rescale * factor + (1.0 - rescale)
