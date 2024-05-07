@@ -6,6 +6,11 @@ Works with SD1.5 and SDXL.
 
 Doesn't work correctly with Stable Cascade.
 
+> [!WARNING]
+> PAG may produce striped "noise" when used with Ancestral/SDE samplers. Setting `sigma_end` to 0.7 or higher may reduce striped patterns.
+>
+> DDIM/Euler/DPM++2M samplers probably don't have such issues.
+
 > [!NOTE]
 > Paper and demo suggest using CFG scale 4.0 with PAG scale 3.0 applied to U-Net's middle layer 0, but feel free to experiment.
 >
