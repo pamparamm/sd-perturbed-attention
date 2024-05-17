@@ -4,12 +4,10 @@ Implementation of [Self-Rectifying Diffusion Sampling with Perturbed-Attention G
 
 Works with SD1.5 and SDXL.
 
-Doesn't work correctly with Stable Cascade.
+Doesn't work with Stable Cascade.
 
-> [!WARNING]
-> PAG may produce striped "noise" when used with Ancestral/SDE samplers. Setting `sigma_end` to 0.7 or higher may reduce striped patterns.
->
-> DDIM/Euler/DPM++2M samplers probably don't have such issues.
+> [!NOTE]
+> PAG may produce striped "noise", setting `sigma_end` to 0.7 or higher may reduce striped patterns.
 
 > [!NOTE]
 > Paper and demo suggest using CFG scale 4.0 with PAG scale 3.0 applied to U-Net's middle layer 0, but feel free to experiment.
@@ -57,3 +55,7 @@ As an alternative for A1111 WebUI you can use PAG implementation from [sd-webui-
 - `rescale_mode`:
   - `full` - takes into account both CFG and PAG.
   - `partial` - depends only on PAG.
+- `unet_block_list`: Replaces both `unet_block` and `unet_block_id`, allows you to select multiple U-Net layers separated with commas. SDXL U-Net has multiple indices for layers, you can specify them using dot symbol (if not specified, PAG would be applied to the whole layer). Example value: `m0,u0.4` (PAG will be applied to middle block 0 and to output block 0 with index 4)
+  - `d` means `input`, `m` means `middle` and `u` means `output`.
+  - SD1.5 U-Net has layers `d0`-`d5`, `m0`, `u0`-`u8`.
+  - SDXL U-Net has layers `d0`-`d3`, `m0`, `u0`-`u5`. In addition, each block except `d0` and `d1` has `0-9` index values (like `m0.7` or `u0.4`). `d0` and `d1` have `0-1` index values.

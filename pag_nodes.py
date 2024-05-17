@@ -1,3 +1,4 @@
+from itertools import groupby
 from torch import Tensor
 
 BACKEND = None
@@ -35,13 +36,57 @@ class PerturbedAttention:
                 "sigma_end": ("FLOAT", {"default": -1.0, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
                 "rescale": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "rescale_mode": (["full", "partial"], {"default": "full"}),
-            }
+            },
+            "optional": {
+                "unet_block_list": ("STRING", {"default": ""}),
+            },
         }
 
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "patch"
 
     CATEGORY = "advanced/model"
+
+    def parse_unet_blocks(self, model: ModelPatcher, unet_block_list: str):
+        output: list[tuple[str, int, int | None]] = []
+
+        # Get all Self-attention blocks
+        input_blocks, middle_blocks, output_blocks = [], [], []
+        for name, module in model.model.diffusion_model.named_modules():
+            if module.__class__.__name__ == "CrossAttention" and name.endswith("attn1"):
+                parts = name.split(".")
+                block_name = parts[0]
+                block_id = int(parts[1])
+                if block_name.startswith("input"):
+                    input_blocks.append(block_id)
+                elif block_name.startswith("middle"):
+                    middle_blocks.append(block_id - 1)
+                elif block_name.startswith("output"):
+                    output_blocks.append(block_id)
+
+        def group_blocks(blocks: list[int]):
+            return [(i, len(list(gr))) for i, gr in groupby(blocks)]
+
+        input_blocks, middle_blocks, output_blocks = group_blocks(input_blocks), group_blocks(middle_blocks), group_blocks(output_blocks)
+
+        unet_blocks = [b.strip() for b in unet_block_list.split(",")]
+        for block in unet_blocks:
+            name, indices = block[0], block[1:].split(".")
+            match name:
+                case "d":
+                    layer, cur_blocks = "input", input_blocks
+                case "m":
+                    layer, cur_blocks = "middle", middle_blocks
+                case "u":
+                    layer, cur_blocks = "output", output_blocks
+            if len(indices) >= 2:
+                number, index = cur_blocks[int(indices[0])][0], int(indices[1])
+                assert 0 <= index < cur_blocks[int(indices[0])][1]
+            else:
+                number, index = cur_blocks[int(indices[0])][0], None
+            output.append((layer, number, index))
+
+        return output
 
     def patch(
         self,
@@ -54,10 +99,15 @@ class PerturbedAttention:
         sigma_end: float = -1.0,
         rescale: float = 0.0,
         rescale_mode: str = "full",
+        unet_block_list: str = "",
     ):
         m = model.clone()
 
         sigma_start = float("inf") if sigma_start < 0 else sigma_start
+        if unet_block_list:
+            blocks = self.parse_unet_blocks(model, unet_block_list)
+        else:
+            blocks = [(unet_block, unet_block_id, None)]
 
         def perturbed_attention(q: Tensor, k: Tensor, v: Tensor, extra_options, mask=None):
             """Perturbed self-attention"""
@@ -84,7 +134,10 @@ class PerturbedAttention:
                 return cfg_result
 
             # Replace Self-attention with PAG
-            model_options = set_model_options_patch_replace(model_options, perturbed_attention, "attn1", unet_block, unet_block_id)
+            for block in blocks:
+                layer, number, index = block
+                model_options = set_model_options_patch_replace(model_options, perturbed_attention, "attn1", layer, number, index)
+
             if BACKEND == "ComfyUI":
                 (pag_cond_pred,) = calc_cond_batch(model, [cond], x, sigma, model_options)
             if BACKEND == "Forge":
@@ -94,6 +147,6 @@ class PerturbedAttention:
 
             return cfg_result + rescale_pag(pag, cond_pred, cfg_result, rescale, rescale_mode)
 
-        m.set_model_sampler_post_cfg_function(post_cfg_function, disable_cfg1_optimization=False)
+        m.set_model_sampler_post_cfg_function(post_cfg_function)
 
         return (m,)
