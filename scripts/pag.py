@@ -39,6 +39,25 @@ try:
                         sigma_start = gr.Number(minimum=-1.0, label="Sigma Start", value=-1.0)
                         sigma_end = gr.Number(minimum=-1.0, label="Sigma End", value=-1.0)
 
+                    self.infotext_fields = (
+                        (enabled, lambda p: gr.Checkbox.update(value="pag_enabled" in p)),
+                        (scale, "pag_scale"),
+                        (rescale_pag, "pag_rescale"),
+                        (rescale_mode, lambda p: gr.Dropdown.update(value=p.get("pag_rescale_mode", "full"))),
+                        (adaptive_scale, "pag_adaptive_scale"),
+                        (hr_override, lambda p: gr.Checkbox.update(value="hr_override" in p)),
+                        (hr_cfg, "pag_hr_cfg"),
+                        (hr_scale, "pag_hr_scale"),
+                        (hr_rescale_pag, "pag_hr_rescale"),
+                        (hr_rescale_mode, lambda p: gr.Dropdown.update(value=p.get("pag_hr_rescale_mode", "full"))),
+                        (hr_adaptive_scale, "pag_hr_adaptive_scale"),
+                        (block, lambda p: gr.Dropdown.update(value=p.get("pag_block", "middle"))),
+                        (block_id, "pag_block_id"),
+                        (block_list, lambda p: gr.Text.update(value=p.get("pag_block_list", ""))),
+                        (sigma_start, "pag_sigma_start"),
+                        (sigma_end, "pag_sigma_end"),
+                    )
+
                 return enabled, scale, rescale_pag, rescale_mode, adaptive_scale, block, block_id, block_list, hr_override, hr_cfg, hr_scale, hr_rescale_pag, hr_rescale_mode, hr_adaptive_scale, sigma_start, sigma_end
 
             def process_before_every_sampling(self, p, *script_args, **kwargs):
@@ -86,6 +105,7 @@ try:
                         pag_adaptive_scale=adaptive_scale,
                         pag_block=block,
                         pag_block_id=block_id,
+                        pag_block_list=block_list,
                     )
                 )
                 if hr_enabled:
