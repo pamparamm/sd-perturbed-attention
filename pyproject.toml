@@ -1,0 +1,14 @@
+[project]
+name = "sd-perturbed-attention"
+description = "Perturbed-Attention Guidance node for ComfyUI."
+version = "1.0.0"
+license = "LICENSE"
+
+[project.urls]
+Repository = "https://github.com/pamparamm/sd-perturbed-attention"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "sd-perturbed-attention"
+Icon = ""
