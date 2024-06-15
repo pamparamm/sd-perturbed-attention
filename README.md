@@ -28,6 +28,8 @@ To install the advanced PAG node from this repo, you can either:
 
 - Install it via [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager) (search for custom node named "Perturbed-Attention Guidance").
 
+- Install it via [comfy-cli](https://comfydocs.org/comfy-cli/getting-started) with `comfy node registry-install sd-perturbed-attention`
+
 ![comfyui-node-advanced](examples/comfyui-node-advanced.png)
 
 ### SD WebUI (Forge)
