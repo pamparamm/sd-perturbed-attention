@@ -11,6 +11,8 @@ jobs:
   publish-node:
     name: Publish Custom Node to registry
     runs-on: ubuntu-latest
+    # if this is a forked repository. Skipping the workflow.
+    if: github.event.repository.fork == false 
     steps:
       - name: Check out code
         uses: actions/checkout@v4
