@@ -61,3 +61,14 @@ As an alternative for A1111 WebUI you can use PAG implementation from [sd-webui-
   - `d` means `input`, `m` means `middle` and `u` means `output`.
   - SD1.5 U-Net has layers `d0`-`d5`, `m0`, `u0`-`u8`.
   - SDXL U-Net has layers `d0`-`d3`, `m0`, `u0`-`u5`. In addition, each block except `d0` and `d1` has `0-9` index values (like `m0.7` or `u0.4`). `d0` and `d1` have `0-1` index values.
+
+## ComfyUI TensorRT
+
+To use PAG together with [ComfyUI_TensorRT](https://github.com/comfyanonymous/ComfyUI_TensorRT), you'll need to:
+1. Build static/dynamic TRT engine of a desired model.
+2. Build static/dynamic TRT engine of the same model with the same TRT parameters, but with fixed PAG injection in selected UNET blocks (`TensorRT Attach PAG` node).
+3. Use `TensorRT Perturbed-Attention Guidance` node with two model inputs: one for base engine and one for PAG engine.
+
+![trt-engines](examples/trt-engines.png)
+
+![trt-inference](examples/trt-inference.png)

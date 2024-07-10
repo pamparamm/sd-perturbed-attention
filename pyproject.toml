@@ -1,7 +1,7 @@
 [project]
 name = "sd-perturbed-attention"
 description = "Perturbed-Attention Guidance with advanced parameters for ComfyUI."
-version = "1.0.0"
+version = "1.0.1"
 license = "MIT"
 
 [project.urls]
