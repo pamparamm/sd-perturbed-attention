@@ -92,7 +92,7 @@ class PerturbedAttention:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "patch"
 
-    CATEGORY = "advanced/model"
+    CATEGORY = "model_patches/unet"
 
     def patch(
         self,
