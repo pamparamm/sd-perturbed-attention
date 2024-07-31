@@ -2,7 +2,7 @@
 name = "sd-perturbed-attention"
 description = "Perturbed-Attention Guidance with advanced parameters for ComfyUI."
 version = "1.0.2"
-license = "MIT"
+license = { text = "MIT License" }
 
 [project.urls]
 Repository = "https://github.com/pamparamm/sd-perturbed-attention"
