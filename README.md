@@ -4,7 +4,7 @@ Implementation of [Self-Rectifying Diffusion Sampling with Perturbed-Attention G
 
 Works with SD1.5 and SDXL.
 
-> [!NOTE] PAG
+> [!NOTE]
 > Paper and demo suggest using CFG scale 4.0 with PAG scale 3.0 applied to U-Net's middle layer 0, but feel free to experiment.
 >
 > Sampling speed without `adaptive_scale` or `sigma_start` / `sigma_end` is similar to Self-Attention Guidance (x0.6 of usual it/s).
