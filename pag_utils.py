@@ -144,6 +144,6 @@ def seg_attention_wrapper(attention, blur_sigma=1.0):
 
         q = q.reshape(bs, inner_dim, -1).permute(0, 2, 1)
 
-        return attention(q, k, v, heads=heads, attn_precision=extra_options["attn_precision"])
+        return attention(q, k, v, heads=heads)
 
     return seg_attention
