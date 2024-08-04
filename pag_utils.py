@@ -124,14 +124,17 @@ def seg_attention_wrapper(attention, blur_sigma=1.0):
     def seg_attention(q: Tensor, k: Tensor, v: Tensor, extra_options, mask=None):
         """Smoothed Energy Guidance self-attention"""
         heads = extra_options["n_heads"]
-        head_dim = extra_options["dim_head"]
+        bs, area, inner_dim = q.shape
 
         height_orig, width_orig = extra_options["original_shape"][2:4]
         aspect_ratio = width_orig / height_orig
-        height = round((q.shape[1] / aspect_ratio)**0.5)
-        width = round(height * aspect_ratio)
 
-        q = q.permute(0, 2, 1).reshape(-1, heads * head_dim, height, width)
+        if aspect_ratio >= 1.0:
+            height = round((area / aspect_ratio)**0.5)
+            q = q.permute(0, 2, 1).reshape(bs, inner_dim, height, -1)
+        else:
+            width = round((area * aspect_ratio)**0.5)
+            q = q.permute(0, 2, 1).reshape(bs, inner_dim, -1, width)
 
         if blur_sigma >= 0:
             kernel_size = math.ceil(6 * blur_sigma) + 1 - math.ceil(6 * blur_sigma) % 2
@@ -139,7 +142,7 @@ def seg_attention_wrapper(attention, blur_sigma=1.0):
         else:
             q[:] = q.mean(dim=(-2, -1), keepdim=True)
 
-        q = q.reshape(-1, heads * head_dim, height * width).permute(0, 2, 1)
+        q = q.reshape(bs, inner_dim, -1).permute(0, 2, 1)
 
         return attention(q, k, v, heads=heads, attn_precision=extra_options["attn_precision"])
 
