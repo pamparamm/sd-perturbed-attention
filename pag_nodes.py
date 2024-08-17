@@ -122,7 +122,9 @@ class PerturbedAttention:
             pag = (cond_pred - pag_cond_pred) * signal_scale
 
             if rescale_mode == "snf":
-                return uncond_pred + snf_guidance(cfg_result - uncond_pred, pag)
+                if uncond_pred.any():
+                    return uncond_pred + snf_guidance(cfg_result - uncond_pred, pag)
+                return cfg_result + pag
 
             return cfg_result + rescale_guidance(pag, cond_pred, cfg_result, rescale, rescale_mode)
 
@@ -208,7 +210,9 @@ class SmoothedEnergyGuidanceAdvanced:
             seg = (cond_pred - seg_cond_pred) * signal_scale
 
             if rescale_mode == "snf":
-                return uncond_pred + snf_guidance(cfg_result - uncond_pred, seg)
+                if uncond_pred.any():
+                    return uncond_pred + snf_guidance(cfg_result - uncond_pred, seg)
+                return cfg_result + seg
 
             return cfg_result + rescale_guidance(seg, cond_pred, cfg_result, rescale, rescale_mode)
 

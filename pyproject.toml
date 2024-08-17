@@ -1,7 +1,7 @@
 [project]
 name = "sd-perturbed-attention"
 description = "Perturbed-Attention Guidance and Smoothed Energy Guidance for ComfyUI and SD Forge/reForge."
-version = "1.1.4"
+version = "1.1.5"
 license = { text = "MIT License" }
 
 [project.urls]
