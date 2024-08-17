@@ -13,12 +13,20 @@ try:
 
     BACKEND = "ComfyUI"
 except ImportError:
-    from ldm_patched.modules.model_patcher import ModelPatcher
-    from ldm_patched.modules.samplers import calc_cond_uncond_batch
-    from ldm_patched.ldm.modules.attention import optimized_attention
     from pag_utils import parse_unet_blocks, set_model_options_patch_replace, perturbed_attention, rescale_guidance, seg_attention_wrapper
 
-    BACKEND = "Forge"
+    try:
+        from ldm_patched.modules.model_patcher import ModelPatcher
+        from ldm_patched.modules.samplers import calc_cond_uncond_batch
+        from ldm_patched.ldm.modules.attention import optimized_attention
+
+        BACKEND = "reForge"
+    except ImportError:
+        from backend.patcher.base import ModelPatcher
+        from backend.sampling.sampling_function import calc_cond_uncond_batch
+        from backend.attention import attention_function as optimized_attention
+
+        BACKEND = "Forge"
 
 
 class PerturbedAttention:
@@ -94,7 +102,7 @@ class PerturbedAttention:
 
             if BACKEND == "ComfyUI":
                 (pag_cond_pred,) = calc_cond_batch(model, [cond], x, sigma, model_options)
-            if BACKEND == "Forge":
+            if BACKEND in {"Forge", "reForge"}:
                 (pag_cond_pred, _) = calc_cond_uncond_batch(model, cond, None, x, sigma, model_options)
 
             pag = (cond_pred - pag_cond_pred) * signal_scale
@@ -176,7 +184,7 @@ class SmoothedEnergyGuidanceAdvanced:
 
             if BACKEND == "ComfyUI":
                 (seg_cond_pred,) = calc_cond_batch(model, [cond], x, sigma, model_options)
-            if BACKEND == "Forge":
+            if BACKEND in {"Forge", "reForge"}:
                 (seg_cond_pred, _) = calc_cond_uncond_batch(model, cond, None, x, sigma, model_options)
 
             seg = (cond_pred - seg_cond_pred) * signal_scale

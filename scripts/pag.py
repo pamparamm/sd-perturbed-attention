@@ -1,7 +1,7 @@
 try:
     import pag_nodes
 
-    if pag_nodes.BACKEND == "Forge":
+    if pag_nodes.BACKEND in {"Forge", "reForge"}:
         import gradio as gr
 
         from modules import scripts

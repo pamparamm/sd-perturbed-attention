@@ -21,7 +21,7 @@ You can either:
 
 - Install it via [comfy-cli](https://comfydocs.org/comfy-cli/getting-started) with `comfy node registry-install sd-perturbed-attention`
 
-### SD WebUI (Forge)
+### SD WebUI (Forge/reForge)
 
 `git clone https://github.com/pamparamm/sd-perturbed-attention.git` into `stable-diffusion-webui-forge/extensions/` folder.
 
