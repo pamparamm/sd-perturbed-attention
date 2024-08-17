@@ -147,3 +147,22 @@ def seg_attention_wrapper(attention, blur_sigma=1.0):
         return attention(q, k, v, heads=heads)
 
     return seg_attention
+
+
+# Saliency-adaptive Noise Fusion based on High-fidelity Person-centric Subject-to-Image Synthesis (Wang et al.)
+# https://github.com/CodeGoat24/Face-diffuser/blob/edff1a5178ac9984879d9f5e542c1d0f0059ca5f/facediffuser/pipeline.py#L535-L562
+def snf_guidance(t_guidance: torch.Tensor, s_guidance: torch.Tensor):
+    b, c, h, w = t_guidance.shape
+
+    t_omega = gaussian_blur_2d(torch.abs(t_guidance), 3, 1)
+    s_omega = gaussian_blur_2d(torch.abs(s_guidance), 3, 1)
+    t_softmax = torch.softmax(t_omega.reshape(b * c, h * w), dim=1).reshape(b, c, h, w)
+    s_softmax = torch.softmax(s_omega.reshape(b * c, h * w), dim=1).reshape(b, c, h, w)
+
+    guidance_stacked = torch.stack([t_guidance, s_guidance], dim=0)
+    ts_softmax = torch.stack([t_softmax, s_softmax], dim=0)
+
+    argeps = torch.argmax(ts_softmax, dim=0, keepdim=True)
+
+    snf = torch.gather(guidance_stacked, dim=0, index=argeps).squeeze(0)
+    return snf

@@ -4,7 +4,13 @@ try:
     from comfy.model_patcher import ModelPatcher
     from comfy.samplers import calc_cond_batch
     from comfy.ldm.modules.attention import optimized_attention
-    from .pag_utils import parse_unet_blocks, perturbed_attention, rescale_guidance, seg_attention_wrapper
+    from .pag_utils import (
+        parse_unet_blocks,
+        perturbed_attention,
+        rescale_guidance,
+        seg_attention_wrapper,
+        snf_guidance,
+    )
 
     try:
         from comfy.model_patcher import set_model_options_patch_replace
@@ -13,7 +19,14 @@ try:
 
     BACKEND = "ComfyUI"
 except ImportError:
-    from pag_utils import parse_unet_blocks, set_model_options_patch_replace, perturbed_attention, rescale_guidance, seg_attention_wrapper
+    from pag_utils import (
+        parse_unet_blocks,
+        set_model_options_patch_replace,
+        perturbed_attention,
+        rescale_guidance,
+        seg_attention_wrapper,
+        snf_guidance,
+    )
 
     try:
         from ldm_patched.modules.model_patcher import ModelPatcher
@@ -42,7 +55,7 @@ class PerturbedAttention:
                 "sigma_start": ("FLOAT", {"default": -1.0, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
                 "sigma_end": ("FLOAT", {"default": -1.0, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
                 "rescale": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "rescale_mode": (["full", "partial"], {"default": "full"}),
+                "rescale_mode": (["full", "partial", "snf"], {"default": "full"}),
             },
             "optional": {
                 "unet_block_list": ("STRING", {"default": ""}),
@@ -79,6 +92,7 @@ class PerturbedAttention:
             """CFG+PAG"""
             model = args["model"]
             cond_pred = args["cond_denoised"]
+            uncond_pred = args["uncond_denoised"]
             cond = args["cond"]
             cfg_result = args["denoised"]
             sigma = args["sigma"]
@@ -107,9 +121,12 @@ class PerturbedAttention:
 
             pag = (cond_pred - pag_cond_pred) * signal_scale
 
+            if rescale_mode == "snf":
+                return uncond_pred + snf_guidance(cfg_result - uncond_pred, pag)
+
             return cfg_result + rescale_guidance(pag, cond_pred, cfg_result, rescale, rescale_mode)
 
-        m.set_model_sampler_post_cfg_function(post_cfg_function)
+        m.set_model_sampler_post_cfg_function(post_cfg_function, rescale_mode == "snf")
 
         return (m,)
 
@@ -127,7 +144,7 @@ class SmoothedEnergyGuidanceAdvanced:
                 "sigma_start": ("FLOAT", {"default": -1.0, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
                 "sigma_end": ("FLOAT", {"default": -1.0, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
                 "rescale": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "rescale_mode": (["full", "partial"], {"default": "full"}),
+                "rescale_mode": (["full", "partial", "snf"], {"default": "full"}),
             },
             "optional": {
                 "unet_block_list": ("STRING", {"default": ""}),
@@ -164,6 +181,7 @@ class SmoothedEnergyGuidanceAdvanced:
             """CFG+SEG"""
             model = args["model"]
             cond_pred = args["cond_denoised"]
+            uncond_pred = args["uncond_denoised"]
             cond = args["cond"]
             cfg_result = args["denoised"]
             sigma = args["sigma"]
@@ -189,8 +207,11 @@ class SmoothedEnergyGuidanceAdvanced:
 
             seg = (cond_pred - seg_cond_pred) * signal_scale
 
+            if rescale_mode == "snf":
+                return uncond_pred + snf_guidance(cfg_result - uncond_pred, seg)
+
             return cfg_result + rescale_guidance(seg, cond_pred, cfg_result, rescale, rescale_mode)
 
-        m.set_model_sampler_post_cfg_function(post_cfg_function)
+        m.set_model_sampler_post_cfg_function(post_cfg_function, rescale_mode == "snf")
 
         return (m,)

@@ -61,6 +61,7 @@ As an alternative for A1111 WebUI you can use PAG implementation from [sd-webui-
 - `rescale_mode`:
   - `full` - takes into account both CFG and Guidance.
   - `partial` - depends only on Guidance.
+  - `snf` - Saliency-adaptive Noise Fusion from [High-fidelity Person-centric Subject-to-Image Synthesis (Wang et al.)](https://arxiv.org/abs/2311.10329). Should increase image quality on high guidance scales. Ignores `rescale` value.
 - `unet_block_list`: Optional input, replaces both `unet_block` and `unet_block_id` and allows you to select multiple U-Net layers separated with commas. SDXL U-Net has multiple indices for layers, you can specify them by using dot symbol (if not specified, Guidance will be applied to the whole layer). Example value: `m0,u0.4` (it applies Guidance to middle block 0 and to output block 0 with index 4)
   - In terms of U-Net `d` means `input`, `m` means `middle` and `u` means `output`.
   - SD1.5 U-Net has layers `d0`-`d5`, `m0`, `u0`-`u8`.

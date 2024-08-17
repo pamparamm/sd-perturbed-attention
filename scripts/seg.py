@@ -22,14 +22,14 @@ try:
                     scale = gr.Slider(label="SEG Scale", minimum=0.0, maximum=30.0, step=0.01, value=3.0)
                     with gr.Row():
                         rescale_seg = gr.Slider(label="Rescale SEG", minimum=0.0, maximum=1.0, step=0.01, value=0.0)
-                        rescale_mode = gr.Dropdown(choices=["full", "partial"], value="full", label="Rescale Mode")
+                        rescale_mode = gr.Dropdown(choices=["full", "partial", "snf"], value="full", label="Rescale Mode")
                     blur_sigma = gr.Slider(label="Blur Sigma", minimum=-1.0, maximum=9999.0, step=0.01, value=-1.0)
                     with InputAccordion(False, label="Override for Hires. fix") as hr_override:
                         hr_cfg = gr.Slider(minimum=1.0, maximum=30.0, step=0.5, label="CFG Scale", value=7.0)
                         hr_scale = gr.Slider(label="SEG Scale", minimum=0.0, maximum=30.0, step=0.01, value=3.0)
                         with gr.Row():
                             hr_rescale_seg = gr.Slider(label="Rescale SEG", minimum=0.0, maximum=1.0, step=0.01, value=0.0)
-                            hr_rescale_mode = gr.Dropdown(choices=["full", "partial"], value="full", label="Rescale Mode")
+                            hr_rescale_mode = gr.Dropdown(choices=["full", "partial", "snf"], value="full", label="Rescale Mode")
                         hr_blur_sigma = gr.Slider(label="Blur Sigma", minimum=-1.0, maximum=9999.0, step=0.01, value=-1.0)
                     with gr.Row():
                         block = gr.Dropdown(choices=["input", "middle", "output"], value="middle", label="U-Net Block")

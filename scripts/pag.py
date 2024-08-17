@@ -22,14 +22,14 @@ try:
                     scale = gr.Slider(label="PAG Scale", minimum=0.0, maximum=30.0, step=0.01, value=3.0)
                     with gr.Row():
                         rescale_pag = gr.Slider(label="Rescale PAG", minimum=0.0, maximum=1.0, step=0.01, value=0.0)
-                        rescale_mode = gr.Dropdown(choices=["full", "partial"], value="full", label="Rescale Mode")
+                        rescale_mode = gr.Dropdown(choices=["full", "partial", "snf"], value="full", label="Rescale Mode")
                     adaptive_scale = gr.Slider(label="Adaptive Scale", minimum=0.0, maximum=1.0, step=0.001, value=0.0)
                     with InputAccordion(False, label="Override for Hires. fix") as hr_override:
                         hr_cfg = gr.Slider(minimum=1.0, maximum=30.0, step=0.5, label="CFG Scale", value=7.0)
                         hr_scale = gr.Slider(label="PAG Scale", minimum=0.0, maximum=30.0, step=0.01, value=3.0)
                         with gr.Row():
                             hr_rescale_pag = gr.Slider(label="Rescale PAG", minimum=0.0, maximum=1.0, step=0.01, value=0.0)
-                            hr_rescale_mode = gr.Dropdown(choices=["full", "partial"], value="full", label="Rescale Mode")
+                            hr_rescale_mode = gr.Dropdown(choices=["full", "partial", "snf"], value="full", label="Rescale Mode")
                         hr_adaptive_scale = gr.Slider(label="Adaptive Scale", minimum=0.0, maximum=1.0, step=0.001, value=0.0)
                     with gr.Row():
                         block = gr.Dropdown(choices=["input", "middle", "output"], value="middle", label="U-Net Block")
