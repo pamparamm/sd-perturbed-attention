@@ -101,7 +101,12 @@ class PerturbedAttention:
 
             signal_scale = scale
             if adaptive_scale > 0:
-                t = model.model_sampling.timestep(sigma)[0].item()
+                t = 0
+                if hasattr(model, "model_sampling"):
+                    t = model.model_sampling.timestep(sigma)[0].item()
+                else:
+                    ts = model.predictor.timestep(sigma)
+                    t = ts[0].item()
                 signal_scale -= scale * (adaptive_scale**4) * (1000 - t)
                 if signal_scale < 0:
                     signal_scale = 0
