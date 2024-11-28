@@ -1,4 +1,5 @@
 import math
+from typing import Callable
 import torch
 from torch import Tensor
 import torch.nn.functional as F
@@ -130,10 +131,10 @@ def seg_attention_wrapper(attention, blur_sigma=1.0):
         aspect_ratio = width_orig / height_orig
 
         if aspect_ratio >= 1.0:
-            height = round((area / aspect_ratio)**0.5)
+            height = round((area / aspect_ratio) ** 0.5)
             q = q.permute(0, 2, 1).reshape(bs, inner_dim, height, -1)
         else:
-            width = round((area * aspect_ratio)**0.5)
+            width = round((area * aspect_ratio) ** 0.5)
             q = q.permute(0, 2, 1).reshape(bs, inner_dim, -1, width)
 
         if blur_sigma >= 0:
@@ -147,6 +148,29 @@ def seg_attention_wrapper(attention, blur_sigma=1.0):
         return attention(q, k, v, heads=heads)
 
     return seg_attention
+
+
+# Modified algorithm from 2411.10257 'The Unreasonable Effectiveness of Guidance for Diffusion Models' (Figure 6.)
+def swg_pred_calc(x: Tensor, crop_count: int, crop_size: int, calc_func: Callable[..., tuple[Tensor]]):
+    steps_per_dim = int(math.sqrt(crop_count))
+    b, c, h, w = x.shape
+    swg_pred = torch.zeros_like(x)
+    overlap = torch.zeros_like(x)
+    stride = (h - crop_size) // (steps_per_dim - 1)
+    for i in range(steps_per_dim):
+        for j in range(steps_per_dim):
+            left, right = stride * i, stride * i + crop_size
+            top, bottom = stride * j, stride * j + crop_size
+
+            x_window = x[:, :, top:bottom, left:right]
+            swg_pred_window = calc_func(x_in=x_window)[0]
+            swg_pred[:, :, top:bottom, left:right] += swg_pred_window
+
+            overlap_window = torch.ones_like(swg_pred_window)
+            overlap[:, :, top:bottom, left:right] += overlap_window
+
+    swg_pred = swg_pred / overlap
+    return swg_pred
 
 
 # Saliency-adaptive Noise Fusion based on High-fidelity Person-centric Subject-to-Image Synthesis (Wang et al.)

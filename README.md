@@ -1,13 +1,14 @@
-# Perturbed-Attention Guidance and Smoothed Energy Guidance for ComfyUI / SD WebUI (Forge/reForge)
+# Perturbed-Attention Guidance, Smoothed Energy Guidance and Sliding Window Guidance for ComfyUI / SD WebUI (Forge/reForge)
 
-Implementation of [Self-Rectifying Diffusion Sampling with Perturbed-Attention Guidance (D. Ahn et al.)](https://ku-cvlab.github.io/Perturbed-Attention-Guidance/) and [Smoothed Energy Guidance: Guiding Diffusion Models with Reduced Energy Curvature of Attention (Susung Hong)](https://arxiv.org/abs/2408.00760) as an extension for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and [SD WebUI (Forge)](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [SD WebUI (reForge)](https://github.com/Panchovix/stable-diffusion-webui-reForge).
+Implementation of
+
+- Perturbed-Attention Guidance from [Self-Rectifying Diffusion Sampling with Perturbed-Attention Guidance (D. Ahn et al.)](https://ku-cvlab.github.io/Perturbed-Attention-Guidance/)
+- [Smoothed Energy Guidance: Guiding Diffusion Models with Reduced Energy Curvature of Attention (Susung Hong)](https://arxiv.org/abs/2408.00760)
+- Sliding Window Guidance from [The Unreasonable Effectiveness of Guidance for Diffusion Models (Kaiser et al.)](https://arxiv.org/abs/2411.10257)
+
+as an extension for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and [SD WebUI (Forge)](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [SD WebUI (reForge)](https://github.com/Panchovix/stable-diffusion-webui-reForge).
 
 Works with SD1.5 and SDXL.
-
-> [!NOTE]
-> Paper and demo suggest using CFG scale 4.0 with PAG scale 3.0 applied to U-Net's middle layer 0, but feel free to experiment.
->
-> Sampling speed without `adaptive_scale` or `sigma_start` / `sigma_end` is similar to Self-Attention Guidance (x0.6 of usual it/s).
 
 ## Installation
 
@@ -67,7 +68,7 @@ As an alternative for A1111 WebUI you can use PAG implementation from [sd-webui-
   - SD1.5 U-Net has layers `d0`-`d5`, `m0`, `u0`-`u8`.
   - SDXL U-Net has layers `d0`-`d3`, `m0`, `u0`-`u5`. In addition, each block except `d0` and `d1` has `0-9` index values (like `m0.7` or `u0.4`). `d0` and `d1` have `0-1` index values.
 
-## ComfyUI TensorRT PAG
+## ComfyUI TensorRT PAG (Experimental)
 
 To use PAG together with [ComfyUI_TensorRT](https://github.com/comfyanonymous/ComfyUI_TensorRT), you'll need to:
 
