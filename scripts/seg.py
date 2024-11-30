@@ -45,7 +45,7 @@ try:
                         (rescale_seg, "seg_rescale"),
                         (rescale_mode, lambda p: gr.Dropdown.update(value=p.get("seg_rescale_mode", "full"))),
                         (blur_sigma, "seg_blur_sigma"),
-                        (hr_override, lambda p: gr.Checkbox.update(value="hr_override" in p)),
+                        (hr_override, lambda p: gr.Checkbox.update(value="seg_hr_override" in p)),
                         (hr_cfg, "seg_hr_cfg"),
                         (hr_scale, "seg_hr_scale"),
                         (hr_rescale_seg, "seg_hr_rescale"),

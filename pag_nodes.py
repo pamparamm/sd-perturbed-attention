@@ -238,8 +238,9 @@ class SlidingWindowGuidanceAdvanced:
             "required": {
                 "model": ("MODEL",),
                 "scale": ("FLOAT", {"default": 5.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01}),
-                "crop_count": ("INT", {"default": 4}),
-                "crop_size": ("INT", {"default": 768, "min": 16, "max": 16384, "step": 8}),
+                "tile_width": ("INT", {"default": 768, "min": 16, "max": 16384, "step": 8}),
+                "tile_height": ("INT", {"default": 768, "min": 16, "max": 16384, "step": 8}),
+                "tile_overlap": ("INT", {"default": 256, "min": 16, "max": 16384, "step": 8}),
                 "sigma_start": ("FLOAT", {"default": -1.0, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
                 "sigma_end": ("FLOAT", {"default": 5.42, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
             },
@@ -254,18 +255,19 @@ class SlidingWindowGuidanceAdvanced:
         self,
         model: ModelPatcher,
         scale: float = 5.0,
-        crop_count: int = 4,
-        crop_size: int = 768,
+        tile_width: int = 768,
+        tile_height: int = 768,
+        tile_overlap: int = 256,
         sigma_start: float = -1.0,
         sigma_end: float = 5.42,
     ):
         m = model.clone()
 
         sigma_start = float("inf") if sigma_start < 0 else sigma_start
-        crop_size = crop_size // 8
+        tile_width, tile_height, tile_overlap = tile_width // 8, tile_height // 8, tile_overlap // 8
 
         def post_cfg_function(args):
-            """CFG+SEG"""
+            """CFG+SWG"""
             model = args["model"]
             cond_pred = args["cond_denoised"]
             cond = args["cond"]
@@ -286,7 +288,7 @@ class SlidingWindowGuidanceAdvanced:
             if BACKEND in {"Forge", "reForge"}:
                 calc_func = partial(calc_cond_uncond_batch, model=model, cond=cond, uncond=None, timestep=sigma, model_options=model_options)
 
-            swg_pred = swg_pred_calc(x, crop_count, crop_size, calc_func)[0]  # type: ignore
+            swg_pred = swg_pred_calc(x, tile_width, tile_height, tile_overlap, calc_func)
             swg = (cond_pred - swg_pred) * signal_scale
 
             return cfg_result + swg

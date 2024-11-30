@@ -45,7 +45,7 @@ try:
                         (rescale_pag, "pag_rescale"),
                         (rescale_mode, lambda p: gr.Dropdown.update(value=p.get("pag_rescale_mode", "full"))),
                         (adaptive_scale, "pag_adaptive_scale"),
-                        (hr_override, lambda p: gr.Checkbox.update(value="hr_override" in p)),
+                        (hr_override, lambda p: gr.Checkbox.update(value="pag_hr_override" in p)),
                         (hr_cfg, "pag_hr_cfg"),
                         (hr_scale, "pag_hr_scale"),
                         (hr_rescale_pag, "pag_hr_rescale"),
