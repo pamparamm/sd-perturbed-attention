@@ -1,14 +1,20 @@
-# Perturbed-Attention Guidance, Smoothed Energy Guidance and Sliding Window Guidance for ComfyUI / SD WebUI (Forge/reForge)
+# Various Guidance implementations for ComfyUI / SD WebUI (Forge/reForge)
 
 Implementation of
 
 - Perturbed-Attention Guidance from [Self-Rectifying Diffusion Sampling with Perturbed-Attention Guidance (D. Ahn et al.)](https://ku-cvlab.github.io/Perturbed-Attention-Guidance/)
 - [Smoothed Energy Guidance: Guiding Diffusion Models with Reduced Energy Curvature of Attention (Susung Hong)](https://arxiv.org/abs/2408.00760)
 - Sliding Window Guidance from [The Unreasonable Effectiveness of Guidance for Diffusion Models (Kaiser et al.)](https://arxiv.org/abs/2411.10257)
+- [PLADIS: Pushing the Limits of Attention in Diffusion Models at Inference Time by Leveraging Sparsity](https://cubeyoung.github.io/pladis-proejct/) (ComfyUI-only)
 
 as an extension for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and [SD WebUI (Forge)](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [SD WebUI (reForge)](https://github.com/Panchovix/stable-diffusion-webui-reForge).
 
 Works with SD1.5 and SDXL.
+
+> [!NOTE]
+> PLADIS isn't working properly right now - for some reason it produces messy images when applied to all cross-attention layers. I'll try to investigate the problem, but it wouldn't be easy considering the lack of official implementation + various typos in the original paper. For debug purposes, I might implement PLADIS as a diffusers pipeline to see if the problem still occurs.
+>
+> Any help is welcomed!
 
 ## Installation
 
@@ -34,17 +40,17 @@ As an alternative for A1111 WebUI you can use PAG implementation from [sd-webui-
 
 ### ComfyUI
 
-![comfyui-node-pag-basic](examples/comfyui-node-pag-basic.png)
+![comfyui-node-pag-basic](res/comfyui-node-pag-basic.png)
 
-![comfyui-node-pag-advanced](examples/comfyui-node-pag-advanced.png)
+![comfyui-node-pag-advanced](res/comfyui-node-pag-advanced.png)
 
-![comfyui-node-seg](examples/comfyui-node-seg.png)
+![comfyui-node-seg](res/comfyui-node-seg.png)
 
 ### SD WebUI (Forge/reForge)
 
-![forge-pag](examples/forge-pag.png)
+![forge-pag](res/forge-pag.png)
 
-![forge-seg](examples/forge-seg.png)
+![forge-seg](res/forge-seg.png)
 
 > [!NOTE]
 > You can override `CFG Scale` and `PAG Scale`/`SEG Scale` for Hires. fix by opening/enabling `Override for Hires. fix` tab.
@@ -77,6 +83,6 @@ To use PAG together with [ComfyUI_TensorRT](https://github.com/comfyanonymous/Co
 2. Build static/dynamic TRT engine of the same model with the same TRT parameters, but with fixed PAG injection in selected UNET blocks (`TensorRT Attach PAG` node).
 3. Use `TensorRT Perturbed-Attention Guidance` node with two model inputs: one for base engine and one for PAG engine.
 
-![trt-engines](examples/trt-engines.png)
+![trt-engines](res/trt-engines.png)
 
-![trt-inference](examples/trt-inference.png)
+![trt-inference](res/trt-inference.png)

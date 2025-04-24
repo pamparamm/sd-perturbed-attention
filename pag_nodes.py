@@ -122,7 +122,9 @@ class PerturbedAttention:
             # Replace Self-attention with PAG
             for block in blocks:
                 layer, number, index = block
-                model_options = set_model_options_patch_replace(model_options, perturbed_attention, "attn1", layer, number, index)
+                model_options = set_model_options_patch_replace(
+                    model_options, perturbed_attention, "attn1", layer, number, index
+                )
 
             if BACKEND == "ComfyUI":
                 (pag_cond_pred,) = calc_cond_batch(model, [cond], x, sigma, model_options)
@@ -210,7 +212,9 @@ class SmoothedEnergyGuidanceAdvanced:
             # Replace Self-attention with SEG attention
             for block in blocks:
                 layer, number, index = block
-                model_options = set_model_options_patch_replace(model_options, seg_attention, "attn1", layer, number, index)
+                model_options = set_model_options_patch_replace(
+                    model_options, seg_attention, "attn1", layer, number, index
+                )
 
             if BACKEND == "ComfyUI":
                 (seg_cond_pred,) = calc_cond_batch(model, [cond], x, sigma, model_options)
@@ -284,9 +288,22 @@ class SlidingWindowGuidanceAdvanced:
             calc_func = None
 
             if BACKEND == "ComfyUI":
-                calc_func = partial(calc_cond_batch, model=model, conds=[cond], timestep=sigma, model_options=model_options)
+                calc_func = partial(
+                    calc_cond_batch,
+                    model=model,
+                    conds=[cond],
+                    timestep=sigma,
+                    model_options=model_options,
+                )
             if BACKEND in {"Forge", "reForge"}:
-                calc_func = partial(calc_cond_uncond_batch, model=model, cond=cond, uncond=None, timestep=sigma, model_options=model_options)
+                calc_func = partial(
+                    calc_cond_uncond_batch,
+                    model=model,
+                    cond=cond,
+                    uncond=None,
+                    timestep=sigma,
+                    model_options=model_options,
+                )
 
             swg_pred = swg_pred_calc(x, tile_width, tile_height, tile_overlap, calc_func)
             swg = (cond_pred - swg_pred) * signal_scale
