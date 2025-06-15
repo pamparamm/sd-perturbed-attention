@@ -17,6 +17,7 @@ class Pladis:
     FUNCTION = "patch"
 
     CATEGORY = "model_patches/unet"
+    EXPERIMENTAL = True
 
     SPARSE_FUNCTIONS = [ENTMAX15_FUNC, SPARSEMAX_FUNC]
 

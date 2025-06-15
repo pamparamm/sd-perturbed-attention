@@ -1,0 +1,8 @@
+{
+    "python.analysis.extraPaths": [
+        "../../"
+    ],
+    "python.autoComplete.extraPaths": [
+        "../../"
+    ],
+}
