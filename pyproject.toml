@@ -1,7 +1,7 @@
 [project]
 name = "sd-perturbed-attention"
 description = "Perturbed-Attention Guidance, Smoothed Energy Guidance, Sliding Window Guidance, PLADIS, Normalized Attention Guidance for ComfyUI and SD Forge/reForge."
-version = "1.2.1"
+version = "1.2.2"
 license = { text = "MIT License" }
 
 [project.urls]

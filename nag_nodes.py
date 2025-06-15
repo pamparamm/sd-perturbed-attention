@@ -27,7 +27,7 @@ def nag_attn2_replace_wrapper(nag_scale=2.0, tau=2.5, alpha=0.5):
         bs = q.shape[0] // len(cond_or_uncond)
 
         # TODO
-        if len(cond_or_uncond > 1):
+        if len(cond_or_uncond) > 1:
             raise ValueError("NAG with CFG is not supported yet")
 
         k_pos, v_pos = k[:-1], v[:-1]
