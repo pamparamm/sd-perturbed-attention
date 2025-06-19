@@ -6,13 +6,13 @@ import torch.nn.functional as F
 from itertools import groupby
 
 
-def parse_unet_blocks(model, unet_block_list: str):
+def parse_unet_blocks(model, unet_block_list: str, attn="attn1"):
     output: list[tuple[str, int, int | None]] = []
 
     # Get all Self-attention blocks
     input_blocks, middle_blocks, output_blocks = [], [], []
     for name, module in model.model.diffusion_model.named_modules():
-        if module.__class__.__name__ == "CrossAttention" and name.endswith("attn1"):
+        if module.__class__.__name__ == "CrossAttention" and name.endswith(attn):
             parts = name.split(".")
             block_name = parts[0]
             block_id = int(parts[1])
@@ -26,7 +26,11 @@ def parse_unet_blocks(model, unet_block_list: str):
     def group_blocks(blocks: list[int]):
         return [(i, len(list(gr))) for i, gr in groupby(blocks)]
 
-    input_blocks, middle_blocks, output_blocks = group_blocks(input_blocks), group_blocks(middle_blocks), group_blocks(output_blocks)
+    input_blocks, middle_blocks, output_blocks = (
+        group_blocks(input_blocks),
+        group_blocks(middle_blocks),
+        group_blocks(output_blocks),
+    )
 
     unet_blocks = [b.strip() for b in unet_block_list.split(",")]
     for block in unet_blocks:
@@ -77,7 +81,9 @@ def perturbed_attention(q: Tensor, k: Tensor, v: Tensor, extra_options, mask=Non
 
 
 # Modified 'Algorithm 2 Classifier-Free Guidance with Rescale' from Common Diffusion Noise Schedules and Sample Steps are Flawed (Lin et al.).
-def rescale_guidance(guidance: torch.Tensor, cond_pred: torch.Tensor, cfg_result: torch.Tensor, rescale=0.0, rescale_mode="full"):
+def rescale_guidance(
+    guidance: torch.Tensor, cond_pred: torch.Tensor, cfg_result: torch.Tensor, rescale=0.0, rescale_mode="full"
+):
     if rescale == 0.0:
         return guidance
 
@@ -121,7 +127,6 @@ def gaussian_blur_2d(img, kernel_size, sigma):
 
 
 def seg_attention_wrapper(attention, blur_sigma=1.0):
-
     def seg_attention(q: Tensor, k: Tensor, v: Tensor, extra_options, mask=None):
         """Smoothed Energy Guidance self-attention"""
         heads = extra_options["n_heads"]
@@ -151,7 +156,9 @@ def seg_attention_wrapper(attention, blur_sigma=1.0):
 
 
 # Modified algorithm from 2411.10257 'The Unreasonable Effectiveness of Guidance for Diffusion Models' (Figure 6.)
-def swg_pred_calc(x: Tensor, tile_width: int, tile_height: int, tile_overlap: int, calc_func: Callable[..., tuple[Tensor]]):
+def swg_pred_calc(
+    x: Tensor, tile_width: int, tile_height: int, tile_overlap: int, calc_func: Callable[..., tuple[Tensor]]
+):
     b, c, h, w = x.shape
     swg_pred = torch.zeros_like(x)
     overlap = torch.zeros_like(x)

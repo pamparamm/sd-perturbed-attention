@@ -5,25 +5,48 @@ from comfy.comfy_types.node_typing import IO, ComfyNodeABC, InputTypeDict
 from comfy.ldm.modules.attention import BasicTransformerBlock, CrossAttention, optimized_attention
 from comfy.model_patcher import ModelPatcher
 
+from .pag_utils import parse_unet_blocks
 
-def nag_attn2_replace_wrapper(nag_scale: float, tau: float, alpha: float, k_neg: torch.Tensor, v_neg: torch.Tensor):
+COND = 0
+UNCOND = 1
+
+
+def nag_attn2_replace_wrapper(
+    nag_scale: float,
+    tau: float,
+    alpha: float,
+    sigma_start: float,
+    sigma_end: float,
+    k_neg: torch.Tensor,
+    v_neg: torch.Tensor,
+):
     # Algorithm 1 from 2505.21179 'Normalized Attention Guidance: Universal Negative Guidance for Diffusion Models'
     def nag_attn2_replace(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, extra_options: dict):
         heads = extra_options["n_heads"]
         attn_precision = extra_options.get("attn_precision")
-        cond_or_uncond = extra_options.get("cond_or_uncond")
+        sigma = extra_options["sigmas"]
 
+        # Perform batched CA
+        z = optimized_attention(q, k, v, heads, attn_precision)
+
+        if nag_scale == 0 or not (sigma_end < sigma[0] <= sigma_start):
+            return z
+
+        cond_or_uncond: list[int] = extra_options.get("cond_or_uncond")  # type: ignore
+
+        is_multicond = len(cond_or_uncond) > 1
         bs = q.shape[0] // len(cond_or_uncond)
 
-        # TODO
-        if len(cond_or_uncond) > 1:
-            raise ValueError("NAG with CFG is not supported yet")
-
-        k_pos, v_pos = k, v
         k_neg_, v_neg_ = k_neg.repeat_interleave(bs, dim=0), v_neg.repeat_interleave(bs, dim=0)
 
-        z_pos = optimized_attention(q, k_pos, v_pos, heads, attn_precision)
-        z_neg = optimized_attention(q, k_neg_, v_neg_, heads, attn_precision)
+        # Perform NAG attention only on conditional queries
+        q_chunked = q.chunk(len(cond_or_uncond))
+        q_pos = q_chunked[cond_or_uncond.index(COND)]
+        z_neg = optimized_attention(q_pos, k_neg_, v_neg_, heads, attn_precision)
+
+        # Apply NAG to conditional parts of batched CA
+        z_chunked = z.chunk(len(cond_or_uncond))
+        z_pos = z_chunked[cond_or_uncond.index(COND)]
 
         z_tilde = z_pos + nag_scale * (z_pos - z_neg)
 
@@ -34,6 +57,10 @@ def nag_attn2_replace_wrapper(nag_scale: float, tau: float, alpha: float, k_neg:
         z_hat = torch.where(ratio > tau, tau, ratio) / ratio * z_tilde
 
         z_nag = alpha * z_hat + (1 - alpha) * z_pos
+
+        # Prepend unconditional CA result to NAG result
+        if is_multicond:
+            z_nag = torch.cat((z_chunked[cond_or_uncond.index(UNCOND)], z_nag))
 
         return z_nag
 
@@ -47,10 +74,15 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
             "required": {
                 "model": (IO.MODEL, {}),
                 "negative": (IO.CONDITIONING, {}),
-                "nag_scale": (IO.FLOAT, {"default": 2.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01}),
+                "scale": (IO.FLOAT, {"default": 2.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01}),
                 "tau": (IO.FLOAT, {"default": 2.5, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01}),
                 "alpha": (IO.FLOAT, {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.001}),
-            }
+                "sigma_start": (IO.FLOAT, {"default": -1.0, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
+                "sigma_end": (IO.FLOAT, {"default": -1.0, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
+            },
+            "optional": {
+                "unet_block_list": (IO.STRING, {"default": ""}),
+            },
         }
 
     RETURN_TYPES = (IO.MODEL,)
@@ -58,27 +90,32 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
     FUNCTION = "patch"
 
     CATEGORY = "model_patches/unet"
-    EXPERIMENTAL = True
 
     def patch(
         self,
         model: ModelPatcher,
         negative,
-        nag_scale=2.0,
+        scale=2.0,
         tau=2.5,
         alpha=0.5,
+        sigma_start: float = -1.0,
+        sigma_end: float = -1.0,
+        unet_block_list: str = "str",
     ):
         m = model.clone()
         dtype = m.model.diffusion_model.dtype
         device = comfy.model_management.get_torch_device()
 
+        sigma_start = float("inf") if sigma_start < 0 else sigma_start
+
         negative_cond = negative[0][0].to(device, dtype=dtype)
+
+        blocks = parse_unet_blocks(m, unet_block_list, attn="attn2") if unet_block_list else None
 
         for name, module in m.model.diffusion_model.named_modules():
             # Apply NAG only to transformer blocks with cross-attention (attn2)
             if isinstance(module, BasicTransformerBlock) and getattr(module, "attn2", None):
                 attn2: CrossAttention = module.attn2  # type: ignore
-                k_neg, v_neg = attn2.to_k(negative_cond), attn2.to_v(negative_cond)
                 parts: list[str] = name.split(".")
                 block_name: str = parts[0].split("_")[0]
                 block_id = int(parts[1])
@@ -89,11 +126,18 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
                 if "transformer_blocks" in parts:
                     t_pos = parts.index("transformer_blocks") + 1
                     t_idx = int(parts[t_pos])
-                else:
-                    pass
 
-                m.set_model_attn2_replace(
-                    nag_attn2_replace_wrapper(nag_scale, tau, alpha, k_neg, v_neg), block_name, block_id, t_idx
-                )
+                if not blocks or (block_name, block_id, t_idx) in blocks or (block_name, block_id, None) in blocks:
+                    k_neg, v_neg = attn2.to_k(negative_cond), attn2.to_v(negative_cond)
+                    nag_attn2_replace = nag_attn2_replace_wrapper(
+                        scale,
+                        tau,
+                        alpha,
+                        sigma_start,
+                        sigma_end,
+                        k_neg,
+                        v_neg,
+                    )
+                    m.set_model_attn2_replace(nag_attn2_replace, block_name, block_id, t_idx)
 
         return (m,)
