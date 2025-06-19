@@ -2,22 +2,11 @@ import torch
 
 import comfy.model_management
 from comfy.comfy_types.node_typing import IO, ComfyNodeABC, InputTypeDict
-from comfy.ldm.modules.attention import optimized_attention
+from comfy.ldm.modules.attention import BasicTransformerBlock, CrossAttention, optimized_attention
 from comfy.model_patcher import ModelPatcher
 
 
-def nag_attn2_patch_wrapper(negative_cond: torch.Tensor):
-    # Batch negative cond with other conds
-    def nag_attn2_patch(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, extra_options: dict):
-        ks = torch.cat((k, negative_cond))
-        vs = torch.cat((v, negative_cond))
-
-        return q, ks, vs
-
-    return nag_attn2_patch
-
-
-def nag_attn2_replace_wrapper(nag_scale=2.0, tau=2.5, alpha=0.5):
+def nag_attn2_replace_wrapper(nag_scale: float, tau: float, alpha: float, k_neg: torch.Tensor, v_neg: torch.Tensor):
     # Algorithm 1 from 2505.21179 'Normalized Attention Guidance: Universal Negative Guidance for Diffusion Models'
     def nag_attn2_replace(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, extra_options: dict):
         heads = extra_options["n_heads"]
@@ -30,11 +19,11 @@ def nag_attn2_replace_wrapper(nag_scale=2.0, tau=2.5, alpha=0.5):
         if len(cond_or_uncond) > 1:
             raise ValueError("NAG with CFG is not supported yet")
 
-        k_pos, v_pos = k[:-1], v[:-1]
-        k_neg, v_neg = k[-1:].repeat_interleave(bs, dim=0), v[-1:].repeat_interleave(bs, dim=0)
+        k_pos, v_pos = k, v
+        k_neg_, v_neg_ = k_neg.repeat_interleave(bs, dim=0), v_neg.repeat_interleave(bs, dim=0)
 
         z_pos = optimized_attention(q, k_pos, v_pos, heads, attn_precision)
-        z_neg = optimized_attention(q, k_neg, v_neg, heads, attn_precision)
+        z_neg = optimized_attention(q, k_neg_, v_neg_, heads, attn_precision)
 
         z_tilde = z_pos + nag_scale * (z_pos - z_neg)
 
@@ -84,17 +73,27 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
         device = comfy.model_management.get_torch_device()
 
         negative_cond = negative[0][0].to(device, dtype=dtype)
-        m.set_model_attn2_patch(nag_attn2_patch_wrapper(negative_cond))
 
         for name, module in m.model.diffusion_model.named_modules():
-            # Apply NAG only to cross-attention layers (attn2)
-            if module.__class__.__name__ == "CrossAttention" and name.endswith("attn2"):
-                parts = name.split(".")
+            # Apply NAG only to transformer blocks with cross-attention (attn2)
+            if isinstance(module, BasicTransformerBlock) and getattr(module, "attn2", None):
+                attn2: CrossAttention = module.attn2  # type: ignore
+                k_neg, v_neg = attn2.to_k(negative_cond), attn2.to_v(negative_cond)
+                parts: list[str] = name.split(".")
                 block_name: str = parts[0].split("_")[0]
                 block_id = int(parts[1])
                 if block_name == "middle":
                     block_id = block_id - 1
 
-                m.set_model_attn2_replace(nag_attn2_replace_wrapper(nag_scale, tau, alpha), block_name, block_id)
+                t_idx = None
+                if "transformer_blocks" in parts:
+                    t_pos = parts.index("transformer_blocks") + 1
+                    t_idx = int(parts[t_pos])
+                else:
+                    pass
+
+                m.set_model_attn2_replace(
+                    nag_attn2_replace_wrapper(nag_scale, tau, alpha, k_neg, v_neg), block_name, block_id, t_idx
+                )
 
         return (m,)
