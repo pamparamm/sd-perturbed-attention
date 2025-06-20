@@ -106,7 +106,7 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
     ):
         m = model.clone()
         sigma_start = float("inf") if sigma_start < 0 else sigma_start
-        negative_cond = negative[0][0]
+        negative_cond = negative[0][0].to(device=m.model.device)
 
         blocks = parse_unet_blocks(m, unet_block_list, attn="attn2") if unet_block_list else None
 
