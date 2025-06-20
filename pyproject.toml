@@ -1,7 +1,7 @@
 [project]
 name = "sd-perturbed-attention"
 description = "Perturbed-Attention Guidance (PAG), Smoothed Energy Guidance (SEG), Sliding Window Guidance (SWG), PLADIS, Normalized Attention Guidance (NAG) for ComfyUI and SD Forge/reForge."
-version = "1.2.6"
+version = "1.2.7"
 license = { text = "MIT License" }
 
 [project.urls]
