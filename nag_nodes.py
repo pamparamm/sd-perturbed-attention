@@ -20,33 +20,32 @@ def nag_attn2_replace_wrapper(
     k_neg: torch.Tensor,
     v_neg: torch.Tensor,
 ):
-    # Algorithm 1 from 2505.21179 'Normalized Attention Guidance: Universal Negative Guidance for Diffusion Models'
+    # Modified Algorithm 1 from 2505.21179 'Normalized Attention Guidance: Universal Negative Guidance for Diffusion Models'
     def nag_attn2_replace(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, extra_options: dict):
         heads = extra_options["n_heads"]
         attn_precision = extra_options.get("attn_precision")
         sigma = extra_options["sigmas"]
+        cond_or_uncond: list[int] = extra_options.get("cond_or_uncond")  # type: ignore
 
         # Perform batched CA
         z = optimized_attention(q, k, v, heads, attn_precision)
 
-        if nag_scale == 0 or not (sigma_end < sigma[0] <= sigma_start):
+        if nag_scale == 0 or not (sigma_end < sigma[0] <= sigma_start) or COND not in cond_or_uncond:
             return z
 
-        cond_or_uncond: list[int] = extra_options.get("cond_or_uncond")  # type: ignore
-
-        is_multicond = len(cond_or_uncond) > 1
-        bs = q.shape[0] // len(cond_or_uncond)
+        bs = q.shape[0] // len(cond_or_uncond) * cond_or_uncond.count(COND)
 
         k_neg_, v_neg_ = k_neg.repeat_interleave(bs, dim=0), v_neg.repeat_interleave(bs, dim=0)
 
-        # Perform NAG attention only on conditional queries
+        # Get conditional queries for NAG
+        # Assume that cond_or_uncond has a layout [1, 1..., 0, 0...]
         q_chunked = q.chunk(len(cond_or_uncond))
-        q_pos = q_chunked[cond_or_uncond.index(COND)]
-        z_neg = optimized_attention(q_pos, k_neg_, v_neg_, heads, attn_precision)
+        q_pos = torch.cat(q_chunked[cond_or_uncond.index(COND) :])
 
-        # Apply NAG to conditional parts of batched CA
+        # Apply NAG only to conditional parts of batched CA
         z_chunked = z.chunk(len(cond_or_uncond))
-        z_pos = z_chunked[cond_or_uncond.index(COND)]
+        z_pos = torch.cat(z_chunked[cond_or_uncond.index(COND) :])
+        z_neg = optimized_attention(q_pos, k_neg_, v_neg_, heads, attn_precision)
 
         z_tilde = z_pos + nag_scale * (z_pos - z_neg)
 
@@ -59,8 +58,8 @@ def nag_attn2_replace_wrapper(
         z_nag = alpha * z_hat + (1 - alpha) * z_pos
 
         # Prepend unconditional CA result to NAG result
-        if is_multicond:
-            z_nag = torch.cat((z_chunked[cond_or_uncond.index(UNCOND)], z_nag))
+        if UNCOND in cond_or_uncond:
+            z_nag = torch.cat(z_chunked[cond_or_uncond.index(UNCOND) : cond_or_uncond.index(COND)] + (z_nag,))
 
         return z_nag
 
