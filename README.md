@@ -13,6 +13,9 @@ as an extension for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and [SD
 Works with SD1.5 and SDXL.
 
 > [!NOTE]
+> `Normalized Attention Guidance` node has its own description inside ComfyUI - you can click on the node and press the button with an encircled question mark.
+
+> [!NOTE]
 > PLADIS isn't working properly right now - for some reason it produces messy images when applied to all cross-attention layers. I'll try to investigate the problem, but it wouldn't be easy considering the lack of official implementation + various typos in the original paper. For debug purposes, I might implement PLADIS as a diffusers pipeline to see if the problem still occurs.
 >
 > Any help is welcomed!

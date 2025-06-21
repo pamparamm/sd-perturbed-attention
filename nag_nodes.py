@@ -1,9 +1,12 @@
+from contextlib import suppress
+from typing import Callable
+
 import torch
 
 import comfy.model_management
-from comfy.model_base import BaseModel
 from comfy.comfy_types.node_typing import IO, ComfyNodeABC, InputTypeDict
 from comfy.ldm.modules.attention import BasicTransformerBlock, CrossAttention, optimized_attention
+from comfy.model_base import BaseModel
 from comfy.model_patcher import ModelPatcher
 
 from .pag_utils import parse_unet_blocks
@@ -20,6 +23,7 @@ def nag_attn2_replace_wrapper(
     sigma_end: float,
     k_neg: torch.Tensor,
     v_neg: torch.Tensor,
+    prev_attn2_replace: Callable | None = None,
 ):
     # Modified Algorithm 1 from 2505.21179 'Normalized Attention Guidance: Universal Negative Guidance for Diffusion Models'
     def nag_attn2_replace(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, extra_options: dict):
@@ -29,7 +33,11 @@ def nag_attn2_replace_wrapper(
         cond_or_uncond: list[int] = extra_options.get("cond_or_uncond")  # type: ignore
 
         # Perform batched CA
-        z = optimized_attention(q, k, v, heads, attn_precision)
+        z = (
+            optimized_attention(q, k, v, heads, attn_precision)
+            if prev_attn2_replace is None
+            else prev_attn2_replace(q, k, v, extra_options)
+        )
 
         if nag_scale == 0 or not (sigma_end < sigma[0] <= sigma_start) or COND not in cond_or_uncond:
             return z
@@ -72,22 +80,66 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
     def INPUT_TYPES(cls) -> InputTypeDict:
         return {
             "required": {
-                "model": (IO.MODEL, {}),
-                "negative": (IO.CONDITIONING, {}),
-                "scale": (IO.FLOAT, {"default": 2.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01}),
-                "tau": (IO.FLOAT, {"default": 2.5, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01}),
-                "alpha": (IO.FLOAT, {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.001}),
+                "model": (IO.MODEL, {"tooltip": "The diffusion model. If you are using any other attn2 replacer (such as `IPAdapter`), you should place this node after it."}),
+                "negative": (IO.CONDITIONING, {"tooltip": "Negative conditioning: either the one you use for CFG or a completely different one."}),
+                "scale": (
+                    IO.FLOAT,
+                    {
+                        "default": 2.0,
+                        "min": 0.0,
+                        "max": 100.0,
+                        "step": 0.1,
+                        "round": 0.01,
+                        "tooltip": "Scale of NAG, does nothing when `tau=0`.",
+                    },
+                ),
+                "tau": (
+                    IO.FLOAT,
+                    {
+                        "default": 2.5,
+                        "min": 0.0,
+                        "max": 100.0,
+                        "step": 0.1,
+                        "round": 0.01,
+                        "tooltip": "Normalization threshold, larger value should increase `scale` impact.",
+                    },
+                ),
+                "alpha": (
+                    IO.FLOAT,
+                    {
+                        "default": 0.5,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.001,
+                        "round": 0.001,
+                        "tooltip": "Linear interpolation between original (at `alpha=0`) and NAG (at `alpha=1`) results.",
+                    },
+                ),
                 "sigma_start": (IO.FLOAT, {"default": -1.0, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
                 "sigma_end": (IO.FLOAT, {"default": -1.0, "min": -1.0, "max": 10000.0, "step": 0.01, "round": False}),
             },
             "optional": {
-                "unet_block_list": (IO.STRING, {"default": ""}),
+                "unet_block_list": (
+                    IO.STRING,
+                    {
+                        "default": "",
+                        "tooltip": (
+                            "Comma-separated blocks to which NAG is being applied to. When the list is empty, NAG is being applied to all block.\n"
+                            "Read README from sd-perturbed-attention for more details."
+                        ),
+                    },
+                ),
             },
         }
 
     RETURN_TYPES = (IO.MODEL,)
 
     FUNCTION = "patch"
+    DESCRIPTION = (
+        "An additional way to apply negative prompts to the image.\n"
+        "It's compatible with CFG, PAG, and other guidances, and can be used with guidance- and step-distilled models as well.\n"
+        "It's also compatible with other attn2 replacers (such as `IPAdapter`) - but make sure to place NAG node **after** other model patches!"
+    )
 
     CATEGORY = "model_patches/unet"
 
@@ -133,6 +185,18 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
 
                 if not blocks or (block_name, block_id, t_idx) in blocks or (block_name, block_id, None) in blocks:
                     k_neg, v_neg = attn2.to_k(negative_cond), attn2.to_v(negative_cond)
+
+                    # Compatibility with other attn2 replaces (such as IPAdapter)
+                    prev_attn2_replace = None
+                    with suppress(KeyError):
+                        block = (block_name, block_id, t_idx)
+                        block_full = (block_name, block_id)
+                        attn2_patches = m.model_options["transformer_options"]["patches_replace"]["attn2"]
+                        if block_full in attn2_patches:
+                            prev_attn2_replace = attn2_patches[block_full]
+                        elif block in attn2_patches:
+                            prev_attn2_replace = attn2_patches[block]
+
                     nag_attn2_replace = nag_attn2_replace_wrapper(
                         scale,
                         tau,
@@ -141,6 +205,7 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
                         sigma_end,
                         k_neg.to(device_infer, dtype=dtype),
                         v_neg.to(device_infer, dtype=dtype),
+                        prev_attn2_replace,
                     )
                     m.set_model_attn2_replace(nag_attn2_replace, block_name, block_id, t_idx)
 
