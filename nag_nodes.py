@@ -1,6 +1,7 @@
 import torch
 
 import comfy.model_management
+from comfy.model_base import BaseModel
 from comfy.comfy_types.node_typing import IO, ComfyNodeABC, InputTypeDict
 from comfy.ldm.modules.attention import BasicTransformerBlock, CrossAttention, optimized_attention
 from comfy.model_patcher import ModelPatcher
@@ -102,7 +103,11 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
         unet_block_list: str = "str",
     ):
         m = model.clone()
-        dtype = m.model.diffusion_model.dtype
+        inner_model: BaseModel = m.model
+        dtype = inner_model.get_dtype()
+        if inner_model.manual_cast_dtype is not None:
+            dtype = inner_model.manual_cast_dtype
+
         device = comfy.model_management.get_torch_device()
 
         sigma_start = float("inf") if sigma_start < 0 else sigma_start
@@ -111,7 +116,7 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
 
         blocks = parse_unet_blocks(m, unet_block_list, attn="attn2") if unet_block_list else None
 
-        for name, module in m.model.diffusion_model.named_modules():
+        for name, module in inner_model.diffusion_model.named_modules():
             # Apply NAG only to transformer blocks with cross-attention (attn2)
             if isinstance(module, BasicTransformerBlock) and getattr(module, "attn2", None):
                 attn2: CrossAttention = module.attn2  # type: ignore
