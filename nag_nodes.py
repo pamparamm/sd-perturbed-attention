@@ -107,12 +107,12 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
         dtype = inner_model.get_dtype()
         if inner_model.manual_cast_dtype is not None:
             dtype = inner_model.manual_cast_dtype
-
-        device = comfy.model_management.get_torch_device()
+        device_model = inner_model.device
+        device_infer = comfy.model_management.get_torch_device()
 
         sigma_start = float("inf") if sigma_start < 0 else sigma_start
 
-        negative_cond = negative[0][0].to(device, dtype=dtype)
+        negative_cond = negative[0][0].to(device_model, dtype=dtype)
 
         blocks = parse_unet_blocks(m, unet_block_list, attn="attn2") if unet_block_list else None
 
@@ -139,8 +139,8 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
                         alpha,
                         sigma_start,
                         sigma_end,
-                        k_neg,
-                        v_neg,
+                        k_neg.to(device_infer, dtype=dtype),
+                        v_neg.to(device_infer, dtype=dtype),
                     )
                     m.set_model_attn2_replace(nag_attn2_replace, block_name, block_id, t_idx)
 
