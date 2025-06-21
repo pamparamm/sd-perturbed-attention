@@ -22,8 +22,6 @@ def nag_attn2_replace_wrapper(
 ):
     # Modified Algorithm 1 from 2505.21179 'Normalized Attention Guidance: Universal Negative Guidance for Diffusion Models'
     def nag_attn2_replace(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, extra_options: dict):
-        nonlocal k_neg, v_neg
-
         heads = extra_options["n_heads"]
         attn_precision = extra_options.get("attn_precision")
         sigma = extra_options["sigmas"]
@@ -37,7 +35,6 @@ def nag_attn2_replace_wrapper(
 
         bs = q.shape[0] // len(cond_or_uncond) * cond_or_uncond.count(COND)
 
-        k_neg, v_neg = k_neg.to(k), v_neg.to(v)
         k_neg_, v_neg_ = k_neg.repeat_interleave(bs, dim=0), v_neg.repeat_interleave(bs, dim=0)
 
         # Get conditional queries for NAG
@@ -105,8 +102,12 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
         unet_block_list: str = "str",
     ):
         m = model.clone()
+        dtype = m.model.diffusion_model.dtype
+        device = comfy.model_management.get_torch_device()
+
         sigma_start = float("inf") if sigma_start < 0 else sigma_start
-        negative_cond = negative[0][0]
+
+        negative_cond = negative[0][0].to(device, dtype=dtype)
 
         blocks = parse_unet_blocks(m, unet_block_list, attn="attn2") if unet_block_list else None
 
@@ -126,10 +127,7 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
                     t_idx = int(parts[t_pos])
 
                 if not blocks or (block_name, block_id, t_idx) in blocks or (block_name, block_id, None) in blocks:
-                    k_neg, v_neg = (
-                        attn2.to_k(negative_cond),
-                        attn2.to_v(negative_cond),
-                    )
+                    k_neg, v_neg = attn2.to_k(negative_cond), attn2.to_v(negative_cond)
                     nag_attn2_replace = nag_attn2_replace_wrapper(
                         scale,
                         tau,
