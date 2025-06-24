@@ -1,48 +1,48 @@
 from functools import partial
 
-
 BACKEND = None
 
 try:
+    from comfy.ldm.modules.attention import optimized_attention
     from comfy.model_patcher import ModelPatcher
     from comfy.samplers import calc_cond_batch
-    from comfy.ldm.modules.attention import optimized_attention
-    from .pag_utils import (
+
+    from .guidance_utils import (
         parse_unet_blocks,
         perturbed_attention,
         rescale_guidance,
         seg_attention_wrapper,
-        swg_pred_calc,
         snf_guidance,
+        swg_pred_calc,
     )
 
     try:
         from comfy.model_patcher import set_model_options_patch_replace
     except ImportError:
-        from .pag_utils import set_model_options_patch_replace
+        from .guidance_utils import set_model_options_patch_replace
 
     BACKEND = "ComfyUI"
 except ImportError:
-    from pag_utils import (
+    from guidance_utils import (
         parse_unet_blocks,
-        set_model_options_patch_replace,
         perturbed_attention,
         rescale_guidance,
         seg_attention_wrapper,
-        swg_pred_calc,
+        set_model_options_patch_replace,
         snf_guidance,
+        swg_pred_calc,
     )
 
     try:
+        from ldm_patched.ldm.modules.attention import optimized_attention
         from ldm_patched.modules.model_patcher import ModelPatcher
         from ldm_patched.modules.samplers import calc_cond_uncond_batch
-        from ldm_patched.ldm.modules.attention import optimized_attention
 
         BACKEND = "reForge"
     except ImportError:
+        from backend.attention import attention_function as optimized_attention
         from backend.patcher.base import ModelPatcher
         from backend.sampling.sampling_function import calc_cond_uncond_batch
-        from backend.attention import attention_function as optimized_attention
 
         BACKEND = "Forge"
 
@@ -88,10 +88,10 @@ class PerturbedAttention:
         m = model.clone()
 
         sigma_start = float("inf") if sigma_start < 0 else sigma_start
-        if unet_block_list:
-            blocks = parse_unet_blocks(model, unet_block_list)
-        else:
-            blocks = [(unet_block, unet_block_id, None)]
+        single_block = (unet_block, unet_block_id, None)
+        blocks, block_names = (
+            parse_unet_blocks(model, unet_block_list, "attn1") if unet_block_list else ([single_block], None)
+        )
 
         def post_cfg_function(args):
             """CFG+PAG"""
@@ -186,10 +186,10 @@ class SmoothedEnergyGuidanceAdvanced:
         m = model.clone()
 
         sigma_start = float("inf") if sigma_start < 0 else sigma_start
-        if unet_block_list:
-            blocks = parse_unet_blocks(model, unet_block_list)
-        else:
-            blocks = [(unet_block, unet_block_id, None)]
+        single_block = (unet_block, unet_block_id, None)
+        blocks, block_names = (
+            parse_unet_blocks(model, unet_block_list, "attn1") if unet_block_list else ([single_block], None)
+        )
 
         def post_cfg_function(args):
             """CFG+SEG"""

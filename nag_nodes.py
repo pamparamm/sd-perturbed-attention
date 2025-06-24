@@ -9,7 +9,7 @@ from comfy.ldm.modules.attention import BasicTransformerBlock, CrossAttention, o
 from comfy.model_base import BaseModel
 from comfy.model_patcher import ModelPatcher
 
-from .pag_utils import parse_unet_blocks
+from .guidance_utils import parse_unet_blocks
 
 COND = 0
 UNCOND = 1
@@ -80,8 +80,19 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
     def INPUT_TYPES(cls) -> InputTypeDict:
         return {
             "required": {
-                "model": (IO.MODEL, {"tooltip": "The diffusion model. If you are using any other attn2 replacer (such as `IPAdapter`), you should place this node after it."}),
-                "negative": (IO.CONDITIONING, {"tooltip": "Negative conditioning: either the one you use for CFG or a completely different one."}),
+                "model": (
+                    IO.MODEL,
+                    {
+                        "tooltip": (
+                            "The diffusion model.\n"
+                            "If you are using any other attn2 replacer (such as `IPAdapter`), you should place this node after it."
+                        )
+                    },
+                ),
+                "negative": (
+                    IO.CONDITIONING,
+                    {"tooltip": "Negative conditioning: either the one you use for CFG or a completely different one."},
+                ),
                 "scale": (
                     IO.FLOAT,
                     {
@@ -166,7 +177,7 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
 
         negative_cond = negative[0][0].to(device_model, dtype=dtype)
 
-        blocks = parse_unet_blocks(m, unet_block_list, attn="attn2") if unet_block_list else None
+        blocks, block_names = parse_unet_blocks(m, unet_block_list, "attn2") if unet_block_list else (None, None)
 
         for name, module in inner_model.diffusion_model.named_modules():
             # Apply NAG only to transformer blocks with cross-attention (attn2)
@@ -210,3 +221,12 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
                     m.set_model_attn2_replace(nag_attn2_replace, block_name, block_id, t_idx)
 
         return (m,)
+
+
+NODE_CLASS_MAPPINGS = {
+    "NormalizedAttentionGuidance": NormalizedAttentionGuidance,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "NormalizedAttentionGuidance": "Normalized Attention Guidance",
+}

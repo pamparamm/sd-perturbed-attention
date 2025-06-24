@@ -1,4 +1,4 @@
-# Various Guidance implementations for ComfyUI / SD WebUI (Forge/reForge)
+# Various Guidance implementations for ComfyUI / SD WebUI (reForge)
 
 Implementation of
 
@@ -7,8 +7,9 @@ Implementation of
 - Sliding Window Guidance from [The Unreasonable Effectiveness of Guidance for Diffusion Models (Kaiser et al.)](https://arxiv.org/abs/2411.10257)
 - [PLADIS: Pushing the Limits of Attention in Diffusion Models at Inference Time by Leveraging Sparsity](https://cubeyoung.github.io/pladis-proejct/) (ComfyUI-only)
 - [Normalized Attention Guidance: Universal Negative Guidance for Diffusion Models](https://arxiv.org/abs/2505.21179) (ComfyUI-only)
+- [Token Perturbation Guidance for Diffusion Models](https://arxiv.org/abs/2506.10036) (ComfyUI-only)
 
-as an extension for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and [SD WebUI (Forge)](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [SD WebUI (reForge)](https://github.com/Panchovix/stable-diffusion-webui-reForge).
+as an extension for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and [SD WebUI (reForge)](https://github.com/Panchovix/stable-diffusion-webui-reForge).
 
 Works with SD1.5 and SDXL.
 
@@ -32,7 +33,7 @@ You can either:
 
 - Install it via [comfy-cli](https://comfydocs.org/comfy-cli/getting-started) with `comfy node registry-install sd-perturbed-attention`
 
-### SD WebUI (Forge/reForge)
+### SD WebUI (reForge)
 
 `git clone https://github.com/pamparamm/sd-perturbed-attention.git` into `stable-diffusion-webui-forge/extensions/` folder.
 
@@ -50,7 +51,7 @@ As an alternative for A1111 WebUI you can use PAG implementation from [sd-webui-
 
 ![comfyui-node-seg](res/comfyui-node-seg.png)
 
-### SD WebUI (Forge/reForge)
+### SD WebUI (reForge)
 
 ![forge-pag](res/forge-pag.png)
 
@@ -77,6 +78,7 @@ As an alternative for A1111 WebUI you can use PAG implementation from [sd-webui-
   - In terms of U-Net `d` means `input`, `m` means `middle` and `u` means `output`.
   - SD1.5 U-Net has layers `d0`-`d5`, `m0`, `u0`-`u8`.
   - SDXL U-Net has layers `d0`-`d3`, `m0`, `u0`-`u5`. In addition, each block except `d0` and `d1` has `0-9` index values (like `m0.7` or `u0.4`). `d0` and `d1` have `0-1` index values.
+  - Supports block ranges (`d0-d3` corresponds to `d0,d1,d2,d3`) and index value ranges (`d2.2-9` corresponds to all index values of `d2` with the exclusion of `d2.0` and `d2.1`).
 
 ## ComfyUI TensorRT PAG (Experimental)
 

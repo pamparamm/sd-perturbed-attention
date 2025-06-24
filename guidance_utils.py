@@ -1,55 +1,85 @@
 import math
-from typing import Callable
-import torch
-from torch import Tensor
-import torch.nn.functional as F
 from itertools import groupby
+from typing import Any, Callable, Literal
+
+import torch
+import torch.nn.functional as F
 
 
-def parse_unet_blocks(model, unet_block_list: str, attn="attn1"):
+def parse_unet_blocks(model, unet_block_list: str, attn: Literal["attn1", "attn2"] | None):
     output: list[tuple[str, int, int | None]] = []
+    names: list[str] = []
 
     # Get all Self-attention blocks
-    input_blocks, middle_blocks, output_blocks = [], [], []
+    input_blocks: list[tuple[int, str]] = []
+    middle_blocks: list[tuple[int, str]] = []
+    output_blocks: list[tuple[int, str]] = []
     for name, module in model.model.diffusion_model.named_modules():
-        if module.__class__.__name__ == "CrossAttention" and name.endswith(attn):
+        if module.__class__.__name__ == "BasicTransformerBlock" and (attn is None or hasattr(module, attn)):
             parts = name.split(".")
-            block_name = parts[0]
+            unet_part = parts[0]
             block_id = int(parts[1])
-            if block_name.startswith("input"):
-                input_blocks.append(block_id)
-            elif block_name.startswith("middle"):
-                middle_blocks.append(block_id - 1)
-            elif block_name.startswith("output"):
-                output_blocks.append(block_id)
+            if unet_part.startswith("input"):
+                input_blocks.append((block_id, name))
+            elif unet_part.startswith("middle"):
+                middle_blocks.append((block_id - 1, name))
+            elif unet_part.startswith("output"):
+                output_blocks.append((block_id, name))
 
-    def group_blocks(blocks: list[int]):
-        return [(i, len(list(gr))) for i, gr in groupby(blocks)]
+    def group_blocks(blocks: list[tuple[int, str]]):
+        grouped_blocks = [(i, list(gr)) for i, gr in groupby(blocks, lambda b: b[0])]
+        return [(i, len(gr), list(idx[1] for idx in gr)) for i, gr in grouped_blocks]
 
-    input_blocks, middle_blocks, output_blocks = (
+    input_blocks_gr, middle_blocks_gr, output_blocks_gr = (
         group_blocks(input_blocks),
         group_blocks(middle_blocks),
         group_blocks(output_blocks),
     )
 
-    unet_blocks = [b.strip() for b in unet_block_list.split(",")]
-    for block in unet_blocks:
-        name, indices = block[0], block[1:].split(".")
-        match name:
+    user_inputs = [b.strip() for b in unet_block_list.split(",")]
+    for user_input in user_inputs:
+        unet_part_s, indices = user_input[0], user_input[1:].split(".")
+        match unet_part_s:
             case "d":
-                layer, cur_blocks = "input", input_blocks
+                unet_part, unet_group = "input", input_blocks_gr
             case "m":
-                layer, cur_blocks = "middle", middle_blocks
+                unet_part, unet_group = "middle", middle_blocks_gr
             case "u":
-                layer, cur_blocks = "output", output_blocks
-        if len(indices) >= 2:
-            number, index = cur_blocks[int(indices[0])][0], int(indices[1])
-            assert 0 <= index < cur_blocks[int(indices[0])][1]
-        else:
-            number, index = cur_blocks[int(indices[0])][0], None
-        output.append((layer, number, index))
+                unet_part, unet_group = "output", output_blocks_gr
+            case _:
+                raise ValueError(f"Block {user_input}: Unknown block prefix {unet_part_s}")
 
-    return output
+        block_index_range = [int(b.strip()) for b in indices[0].split("-")]
+        block_index_range_start = block_index_range[0]
+        block_index_range_end = block_index_range[0] if len(block_index_range) != 2 else block_index_range[1]
+        for block_index in range(block_index_range_start, block_index_range_end + 1):
+            if block_index < 0 or block_index >= len(unet_group):
+                raise ValueError(
+                    f"Block {user_input}: Block index in out of range 0 <= {block_index} < {len(unet_group)}"
+                )
+
+            block_group = unet_group[block_index]
+            block_index_real = block_group[0]
+
+            if len(indices) == 1:
+                output.append((unet_part, block_index_real, None))
+                names.extend(block_group[2])
+            else:
+                transformer_index_range = [int(b.strip()) for b in indices[1].split("-")]
+                transformer_index_range_start = transformer_index_range[0]
+                transformer_index_range_end = (
+                    transformer_index_range[0] if len(transformer_index_range) != 2 else transformer_index_range[1]
+                )
+                for transformer_index in range(transformer_index_range_start, transformer_index_range_end + 1):
+                    if transformer_index is not None and (transformer_index < 0 or transformer_index >= block_group[1]):
+                        raise ValueError(
+                            f"Block {user_input}: Transformer index in out of range 0 <= {transformer_index} < {block_group[1]}"
+                        )
+
+                    output.append((unet_part, block_index_real, transformer_index))
+                    names.append(block_group[2][transformer_index])
+
+    return output, names
 
 
 # Copied from https://github.com/comfyanonymous/ComfyUI/blob/719fb2c81d716ce8edd7f1bdc7804ae160a71d3a/comfy/model_patcher.py#L21 for backward compatibility
@@ -75,7 +105,14 @@ def set_model_options_patch_replace(model_options, patch, name, block_name, numb
     return model_options
 
 
-def perturbed_attention(q: Tensor, k: Tensor, v: Tensor, extra_options, mask=None):
+def set_model_options_value(model_options, key: str, value: Any):
+    to = model_options["transformer_options"].copy()
+    to[key] = value
+    model_options["transformer_options"] = to
+    return model_options
+
+
+def perturbed_attention(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, extra_options, mask=None):
     """Perturbed self-attention"""
     return v
 
@@ -127,7 +164,7 @@ def gaussian_blur_2d(img, kernel_size, sigma):
 
 
 def seg_attention_wrapper(attention, blur_sigma=1.0):
-    def seg_attention(q: Tensor, k: Tensor, v: Tensor, extra_options, mask=None):
+    def seg_attention(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, extra_options, mask=None):
         """Smoothed Energy Guidance self-attention"""
         heads = extra_options["n_heads"]
         bs, area, inner_dim = q.shape
@@ -157,7 +194,7 @@ def seg_attention_wrapper(attention, blur_sigma=1.0):
 
 # Modified algorithm from 2411.10257 'The Unreasonable Effectiveness of Guidance for Diffusion Models' (Figure 6.)
 def swg_pred_calc(
-    x: Tensor, tile_width: int, tile_height: int, tile_overlap: int, calc_func: Callable[..., tuple[Tensor]]
+    x: torch.Tensor, tile_width: int, tile_height: int, tile_overlap: int, calc_func: Callable[..., tuple[torch.Tensor]]
 ):
     b, c, h, w = x.shape
     swg_pred = torch.zeros_like(x)

@@ -1,6 +1,7 @@
 from comfy.model_patcher import ModelPatcher
 from comfy.samplers import calc_cond_batch
-from .pag_utils import parse_unet_blocks, perturbed_attention, rescale_guidance
+
+from .guidance_utils import parse_unet_blocks, perturbed_attention, rescale_guidance
 
 
 class TRTAttachPag:
@@ -31,10 +32,10 @@ class TRTAttachPag:
     ):
         m = model.clone()
 
-        if unet_block_list:
-            blocks = parse_unet_blocks(model, unet_block_list)
-        else:
-            blocks = [(unet_block, unet_block_id, None)]
+        single_block = (unet_block, unet_block_id, None)
+        blocks, block_names = (
+            parse_unet_blocks(model, unet_block_list, "attn1") if unet_block_list else ([single_block], None)
+        )
 
         # Replace Self-attention with PAG
         for block in blocks:
