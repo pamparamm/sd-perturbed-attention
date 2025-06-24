@@ -44,7 +44,7 @@ class TokenPerturbationGuidance(ComfyNodeABC):
                 "rescale_mode": (IO.COMBO, {"options": ["full", "partial", "snf"], "default": "full"}),
             },
             "optional": {
-                "unet_block_list": (IO.STRING, {"default": "d2,d3", "tooltip": "Blocks to which TPG is applied. "}),
+                "unet_block_list": (IO.STRING, {"default": "d2.2-9,d3", "tooltip": "Blocks to which TPG is applied. "}),
             },
         }
 
