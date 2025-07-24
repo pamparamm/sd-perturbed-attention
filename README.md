@@ -6,7 +6,7 @@ Implementation of
 - [Smoothed Energy Guidance: Guiding Diffusion Models with Reduced Energy Curvature of Attention (Susung Hong)](https://arxiv.org/abs/2408.00760)
 - Sliding Window Guidance from [The Unreasonable Effectiveness of Guidance for Diffusion Models (Kaiser et al.)](https://arxiv.org/abs/2411.10257)
 - [PLADIS: Pushing the Limits of Attention in Diffusion Models at Inference Time by Leveraging Sparsity](https://cubeyoung.github.io/pladis-proejct/) (ComfyUI-only)
-- [Normalized Attention Guidance: Universal Negative Guidance for Diffusion Models](https://arxiv.org/abs/2505.21179) (ComfyUI-only)
+- [Normalized Attention Guidance: Universal Negative Guidance for Diffusion Models](https://arxiv.org/abs/2505.21179)
 - [Token Perturbation Guidance for Diffusion Models](https://arxiv.org/abs/2506.10036) (ComfyUI-only)
 
 as an extension for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and [SD WebUI (reForge)](https://github.com/Panchovix/stable-diffusion-webui-reForge).
@@ -57,9 +57,11 @@ As an alternative for A1111 WebUI you can use PAG implementation from [sd-webui-
 
 ![forge-seg](res/forge-seg.png)
 
+![forge-nag](res/forge-nag.png)
+
 > [!NOTE]
-> You can override `CFG Scale` and `PAG Scale`/`SEG Scale` for Hires. fix by opening/enabling `Override for Hires. fix` tab.
-> To disable PAG during Hires. fix, you can set `PAG Scale` under Override to 0.
+> You can override `CFG Scale` and `PAG Scale`/`SEG Scale`/`NAG Scale` for Hires. fix by opening/enabling `Override for Hires. fix` tab.
+> To disable guidance during Hires. fix, you can set the scale under Override to 0 or use the `HRFix Off` option in the `Hires Fix Mode` dropdown for widgets that support it.
 
 ### Inputs
 
@@ -79,6 +81,16 @@ As an alternative for A1111 WebUI you can use PAG implementation from [sd-webui-
   - SD1.5 U-Net has layers `d0`-`d5`, `m0`, `u0`-`u8`.
   - SDXL U-Net has layers `d0`-`d3`, `m0`, `u0`-`u5`. In addition, each block except `d0` and `d1` has `0-9` index values (like `m0.7` or `u0.4`). `d0` and `d1` have `0-1` index values.
   - Supports block ranges (`d0-d3` corresponds to `d0,d1,d2,d3`) and index value ranges (`d2.2-9` corresponds to all index values of `d2` with the exclusion of `d2.0` and `d2.1`).
+- `hr_mode`: Controls when guidance is active during generation
+  - `Both` - Apply guidance in both base generation and Hires. fix (default)
+  - `HRFix Off` - Only apply guidance during base generation, disable during Hires. fix
+  - `HRFix Only` - Only apply guidance during Hires. fix, disable during base generation
+
+### NAG-specific Inputs
+
+- `negative`: NAG negative prompt. When empty, uses the main negative prompt.
+- `tau`: Normalization threshold. Higher values increase the impact of the scale parameter.
+- `alpha`: Linear interpolation between original (at alpha=0) and NAG (at alpha=1) results.
 
 ## ComfyUI TensorRT PAG (Experimental)
 
