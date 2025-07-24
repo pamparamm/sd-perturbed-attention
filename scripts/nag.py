@@ -44,7 +44,7 @@ try:
 
                     negative = gr.Textbox(
                         label="NAG Negative Prompt",
-                        placeholder="Supplements CFG when scale>1, or works alone when CFG=1. Leave empty to reuse main negative.",
+                        placeholder="Leave empty to reuse main negative.",
                         lines=2
                     )
 
