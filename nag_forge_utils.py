@@ -30,7 +30,6 @@ except ImportError:
 COND = 0
 UNCOND = 1
 
-
 def nag_attn2_replace_wrapper(
     nag_scale: float,
     tau: float,

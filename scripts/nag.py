@@ -16,9 +16,9 @@ try:
                 self.sigma_start = sigma_start
                 self.sigma_end = sigma_end
 
-        # Define presets
+        # Defined presets
         NAG_PRESETS = {
-            "SDXL": NAGPreset(scale=6.0, tau=1.5, alpha=1.0, sigma_start=-1, sigma_end=-1.0),
+            "SDXL": NAGPreset(scale=4.0, tau=2.5, alpha=1.0, sigma_start=-1, sigma_end=-1.0),
             "SD1.5": NAGPreset(scale=5.0, tau=2.5, alpha=0.4, sigma_start=-1.0, sigma_end=-1.0),
             "Vanilla": NAGPreset(scale=2.0, tau=2.5, alpha=0.5, sigma_start=-1.0, sigma_end=-1.0),
         }
@@ -75,6 +75,14 @@ try:
                         info="Linear interpolation between original (at alpha=0) and NAG (at alpha=1) results"
                     )
 
+                    hr_mode = gr.Radio(
+                        show_label=False,
+                        label="Hires Fix Mode",
+                        choices=["Both", "HRFix Off", "HRFix Only"],
+                        value="Both",
+                        info="Control when NAG is active during generation",
+                    )
+
                     with InputAccordion(False, label="Override for Hires. fix") as hr_override:
                         hr_scale = gr.Slider(
                             label="NAG Scale",
@@ -128,6 +136,7 @@ try:
                         (scale, "nag_scale"),
                         (tau, "nag_tau"),
                         (alpha, "nag_alpha"),
+                        (hr_mode, "nag_hr_mode"),
                         (hr_override, lambda p: gr.Checkbox.update(value="nag_hr_override" in p)),
                         (hr_scale, "nag_hr_scale"),
                         (hr_tau, "nag_hr_tau"),
@@ -157,7 +166,7 @@ try:
                             outputs=[scale, tau, alpha, sigma_start, sigma_end]
                         )
 
-                return enabled, negative, scale, tau, alpha, hr_override, hr_scale, hr_tau, hr_alpha, sigma_start, sigma_end, unet_block_list
+                return enabled, negative, scale, tau, alpha, hr_mode, hr_override, hr_scale, hr_tau, hr_alpha, sigma_start, sigma_end, unet_block_list
 
             def process_before_every_sampling(self, p, *script_args, **kwargs):
                 (
@@ -166,6 +175,7 @@ try:
                     scale,
                     tau,
                     alpha,
+                    hr_mode,
                     hr_override,
                     hr_scale,
                     hr_tau,
@@ -192,8 +202,15 @@ try:
 
                 unet = p.sd_model.forge_objects.unet
                 hr_enabled = getattr(p, "enable_hr", False)
+                is_hr_pass = getattr(p, "is_hr_pass", False)
 
-                if hr_enabled and p.is_hr_pass and hr_override:
+                # hr_mode to allow for targeting first, second, or both passes.
+                if hr_mode == "HRFix Off" and is_hr_pass:
+                    return  # Skip NAG on hires pass
+                elif hr_mode == "HRFix Only" and not is_hr_pass:
+                    return  # Skip NAG on first pass
+
+                if hr_enabled and is_hr_pass and hr_override:
                     unet = opNormalizedAttention.patch(
                         unet,
                         negative_cond,
@@ -227,6 +244,9 @@ try:
                         nag_alpha=alpha,
                     )
                 )
+
+                if hr_mode != "Both":
+                    p.extra_generation_params["nag_hr_mode"] = hr_mode
 
                 if unet_block_list:
                     p.extra_generation_params["nag_block_list"] = unet_block_list

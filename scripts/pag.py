@@ -24,6 +24,15 @@ try:
                         rescale_pag = gr.Slider(label="Rescale PAG", minimum=0.0, maximum=1.0, step=0.01, value=0.0)
                         rescale_mode = gr.Dropdown(choices=["full", "partial", "snf"], value="full", label="Rescale Mode")
                     adaptive_scale = gr.Slider(label="Adaptive Scale", minimum=0.0, maximum=1.0, step=0.001, value=0.0)
+
+                    hr_mode = gr.Radio(
+                        show_label=False,
+                        label="Hires Fix Mode",
+                        choices=["Both", "HRFix Off", "HRFix Only"],
+                        value="Both",
+                        info="Control when PAG is active during generation",
+                    )
+
                     with InputAccordion(False, label="Override for Hires. fix") as hr_override:
                         hr_cfg = gr.Slider(minimum=1.0, maximum=30.0, step=0.5, label="CFG Scale", value=7.0)
                         hr_scale = gr.Slider(label="PAG Scale", minimum=0.0, maximum=30.0, step=0.01, value=3.0)
@@ -45,6 +54,7 @@ try:
                         (rescale_pag, "pag_rescale"),
                         (rescale_mode, lambda p: gr.Dropdown.update(value=p.get("pag_rescale_mode", "full"))),
                         (adaptive_scale, "pag_adaptive_scale"),
+                        (hr_mode, "pag_hr_mode"),
                         (hr_override, lambda p: gr.Checkbox.update(value="pag_hr_override" in p)),
                         (hr_cfg, "pag_hr_cfg"),
                         (hr_scale, "pag_hr_scale"),
@@ -58,7 +68,7 @@ try:
                         (sigma_end, "pag_sigma_end"),
                     )
 
-                return enabled, scale, rescale_pag, rescale_mode, adaptive_scale, block, block_id, block_list, hr_override, hr_cfg, hr_scale, hr_rescale_pag, hr_rescale_mode, hr_adaptive_scale, sigma_start, sigma_end
+                return enabled, scale, rescale_pag, rescale_mode, adaptive_scale, hr_mode, block, block_id, block_list, hr_override, hr_cfg, hr_scale, hr_rescale_pag, hr_rescale_mode, hr_adaptive_scale, sigma_start, sigma_end
 
             def process_before_every_sampling(self, p, *script_args, **kwargs):
                 (
@@ -67,6 +77,7 @@ try:
                     rescale_pag,
                     rescale_mode,
                     adaptive_scale,
+                    hr_mode,
                     block,
                     block_id,
                     block_list,
@@ -84,10 +95,16 @@ try:
                     return
 
                 unet = p.sd_model.forge_objects.unet
-
                 hr_enabled = getattr(p, "enable_hr", False)
+                is_hr_pass = getattr(p, "is_hr_pass", False)
 
-                if hr_enabled and p.is_hr_pass and hr_override:
+                # hr_mode to allow for targeting first, second, or both passes.
+                if hr_mode == "HRFix Off" and is_hr_pass:
+                    return  # Skip PAG on hires pass
+                elif hr_mode == "HRFix Only" and not is_hr_pass:
+                    return  # Skip PAG on first pass
+
+                if hr_enabled and is_hr_pass and hr_override:
                     p.cfg_scale_before_hr = p.cfg_scale
                     p.cfg_scale = hr_cfg
                     unet = opPerturbedAttention.patch(unet, hr_scale, hr_adaptive_scale, block, block_id, sigma_start, sigma_end, hr_rescale_pag, hr_rescale_mode, block_list)[0]
@@ -108,6 +125,9 @@ try:
                         pag_block_list=block_list,
                     )
                 )
+
+                if hr_mode != "Both":
+                    p.extra_generation_params["pag_hr_mode"] = hr_mode
                 if hr_enabled:
                     p.extra_generation_params["pag_hr_override"] = hr_override
                     if hr_override:
@@ -137,6 +157,7 @@ try:
                     rescale_pag,
                     rescale_mode,
                     adaptive_scale,
+                    hr_mode,
                     block,
                     block_id,
                     block_list,
