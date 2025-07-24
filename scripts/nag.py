@@ -18,7 +18,7 @@ try:
 
         # Defined presets
         NAG_PRESETS = {
-            "SDXL": NAGPreset(scale=4.0, tau=2.5, alpha=1.0, sigma_start=-1, sigma_end=-1.0),
+            "SDXL": NAGPreset(scale=4, tau=2.5, alpha=0.8, sigma_start=-1, sigma_end=-1.0),
             "SD1.5": NAGPreset(scale=5.0, tau=2.5, alpha=0.4, sigma_start=-1.0, sigma_end=-1.0),
             "Vanilla": NAGPreset(scale=2.0, tau=2.5, alpha=0.5, sigma_start=-1.0, sigma_end=-1.0),
         }

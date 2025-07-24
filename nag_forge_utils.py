@@ -8,15 +8,11 @@ BACKEND = None
 try:
     from ldm_patched.ldm.modules.attention import optimized_attention
     from ldm_patched.modules.model_patcher import ModelPatcher
-    from ldm_patched.modules.model_base import BaseModel
-    import ldm_patched.modules.model_management as model_management
 
     BACKEND = "reForge"
 except ImportError:
     from backend.attention import attention_function as optimized_attention
     from backend.patcher.base import ModelPatcher
-    from backend.model_base import BaseModel
-    import backend.model_management as model_management
 
     BACKEND = "Forge"
 
@@ -131,10 +127,6 @@ class NormalizedAttentionGuidance:
     ):
         m = model.clone()
         inner_model: BaseModel = m.model
-        dtype = inner_model.get_dtype()
-
-        if inner_model.manual_cast_dtype is not None:
-            dtype = inner_model.manual_cast_dtype
 
         sigma_start = float("inf") if sigma_start < 0 else sigma_start
 
@@ -143,7 +135,7 @@ class NormalizedAttentionGuidance:
         if BACKEND == "reForge":
             from ldm_patched.ldm.modules.attention import BasicTransformerBlock, CrossAttention
         else:
-            from backend.ldm.modules.attention import BasicTransformerBlock, CrossAttention
+            from backend.nn.unet import BasicTransformerBlock, CrossAttention
 
         for name, module in inner_model.diffusion_model.named_modules():
             # Apply NAG only to transformer blocks with cross-attention (attn2)
