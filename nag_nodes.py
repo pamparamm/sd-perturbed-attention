@@ -163,7 +163,7 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
         alpha=0.5,
         sigma_start: float = -1.0,
         sigma_end: float = -1.0,
-        unet_block_list: str = "str",
+        unet_block_list="",
     ):
         m = model.clone()
         inner_model: BaseModel = m.model
@@ -179,46 +179,49 @@ class NormalizedAttentionGuidance(ComfyNodeABC):
 
         blocks, block_names = parse_unet_blocks(m, unet_block_list, "attn2") if unet_block_list else (None, None)
 
-        for name, module in inner_model.diffusion_model.named_modules():
-            # Apply NAG only to transformer blocks with cross-attention (attn2)
-            if isinstance(module, BasicTransformerBlock) and getattr(module, "attn2", None):
-                attn2: CrossAttention = module.attn2  # type: ignore
-                parts: list[str] = name.split(".")
-                block_name: str = parts[0].split("_")[0]
-                block_id = int(parts[1])
-                if block_name == "middle":
-                    block_id = block_id - 1
+        # Apply NAG only to transformer blocks with cross-attention (attn2)
+        for name, module in (
+            (n, m)
+            for n, m in inner_model.diffusion_model.named_modules()
+            if isinstance(m, BasicTransformerBlock) and getattr(m, "attn2", None)
+        ):
+            attn2: CrossAttention = module.attn2  # type: ignore
+            parts: list[str] = name.split(".")
+            block_name: str = parts[0].split("_")[0]
+            block_id = int(parts[1])
+            if block_name == "middle":
+                block_id = block_id - 1
 
-                t_idx = None
-                if "transformer_blocks" in parts:
-                    t_pos = parts.index("transformer_blocks") + 1
-                    t_idx = int(parts[t_pos])
+            t_idx = None
+            if "transformer_blocks" in parts:
+                t_pos = parts.index("transformer_blocks") + 1
+                t_idx = int(parts[t_pos])
 
-                if not blocks or (block_name, block_id, t_idx) in blocks or (block_name, block_id, None) in blocks:
-                    k_neg, v_neg = attn2.to_k(negative_cond), attn2.to_v(negative_cond)
+            if not blocks or (block_name, block_id, t_idx) in blocks or (block_name, block_id, None) in blocks:
+                k_neg, v_neg = attn2.to_k(negative_cond), attn2.to_v(negative_cond)
 
-                    # Compatibility with other attn2 replaces (such as IPAdapter)
-                    prev_attn2_replace = None
-                    with suppress(KeyError):
-                        block = (block_name, block_id, t_idx)
-                        block_full = (block_name, block_id)
-                        attn2_patches = m.model_options["transformer_options"]["patches_replace"]["attn2"]
-                        if block_full in attn2_patches:
-                            prev_attn2_replace = attn2_patches[block_full]
-                        elif block in attn2_patches:
-                            prev_attn2_replace = attn2_patches[block]
+                # Compatibility with other attn2 replaces (such as IPAdapter)
+                prev_attn2_replace = None
+                with suppress(KeyError):
+                    block = (block_name, block_id, t_idx)
+                    block_full = (block_name, block_id)
+                    attn2_patches = m.model_options["transformer_options"]["patches_replace"]["attn2"]
+                    if block_full in attn2_patches:
+                        prev_attn2_replace = attn2_patches[block_full]
+                    elif block in attn2_patches:
+                        prev_attn2_replace = attn2_patches[block]
 
-                    nag_attn2_replace = nag_attn2_replace_wrapper(
-                        scale,
-                        tau,
-                        alpha,
-                        sigma_start,
-                        sigma_end,
-                        k_neg.to(device_infer, dtype=dtype),
-                        v_neg.to(device_infer, dtype=dtype),
-                        prev_attn2_replace,
-                    )
-                    m.set_model_attn2_replace(nag_attn2_replace, block_name, block_id, t_idx)
+                nag_attn2_replace = nag_attn2_replace_wrapper(
+                    scale,
+                    tau,
+                    alpha,
+                    sigma_start,
+                    sigma_end,
+                    k_neg.to(device_infer, dtype=dtype),
+                    v_neg.to(device_infer, dtype=dtype),
+                    prev_attn2_replace,
+                )
+                m.set_model_attn2_replace(nag_attn2_replace, block_name, block_id, t_idx)
 
         return (m,)
 

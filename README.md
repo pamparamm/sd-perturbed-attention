@@ -6,20 +6,12 @@ Implementation of
 - [Smoothed Energy Guidance: Guiding Diffusion Models with Reduced Energy Curvature of Attention (Susung Hong)](https://arxiv.org/abs/2408.00760)
 - Sliding Window Guidance from [The Unreasonable Effectiveness of Guidance for Diffusion Models (Kaiser et al.)](https://arxiv.org/abs/2411.10257)
 - [PLADIS: Pushing the Limits of Attention in Diffusion Models at Inference Time by Leveraging Sparsity](https://cubeyoung.github.io/pladis-proejct/) (ComfyUI-only)
-- [Normalized Attention Guidance: Universal Negative Guidance for Diffusion Models](https://arxiv.org/abs/2505.21179) (ComfyUI-only)
+- [Normalized Attention Guidance: Universal Negative Guidance for Diffusion Models](https://arxiv.org/abs/2505.21179) (ComfyUI-only, has a description inside ComfyUI)
 - [Token Perturbation Guidance for Diffusion Models](https://arxiv.org/abs/2506.10036) (ComfyUI-only)
 
 as an extension for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and [SD WebUI (reForge)](https://github.com/Panchovix/stable-diffusion-webui-reForge).
 
 Works with SD1.5 and SDXL.
-
-> [!NOTE]
-> `Normalized Attention Guidance` node has its own description inside ComfyUI - you can click on the node and press the button with an encircled question mark.
-
-> [!NOTE]
-> PLADIS isn't working properly right now - for some reason it produces messy images when applied to all cross-attention layers. I'll try to investigate the problem, but it wouldn't be easy considering the lack of official implementation + various typos in the original paper. For debug purposes, I might implement PLADIS as a diffusers pipeline to see if the problem still occurs.
->
-> Any help is welcomed!
 
 ## Installation
 
