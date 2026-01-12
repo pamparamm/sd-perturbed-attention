@@ -9,7 +9,7 @@ Implementation of
 - [Normalized Attention Guidance: Universal Negative Guidance for Diffusion Models](https://arxiv.org/abs/2505.21179) (ComfyUI-only, has a description inside ComfyUI)
 - [Token Perturbation Guidance for Diffusion Models](https://arxiv.org/abs/2506.10036) (ComfyUI-only)
 
-as an extension for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) and [SD WebUI (reForge)](https://github.com/Panchovix/stable-diffusion-webui-reForge).
+as an extension for [ComfyUI](https://github.com/Comfy-Org/ComfyUI) and [SD WebUI (reForge)](https://github.com/Panchovix/stable-diffusion-webui-reForge).
 
 Works with SD1.5 and SDXL.
 
@@ -21,7 +21,7 @@ You can either:
 
 - `git clone https://github.com/pamparamm/sd-perturbed-attention.git` into `ComfyUI/custom-nodes/` folder.
 
-- Install it via [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager) (search for custom node named "Perturbed-Attention Guidance").
+- Install it via [ComfyUI Manager](https://github.com/Comfy-Org/ComfyUI-Manager) (search for custom node named "Perturbed-Attention Guidance").
 
 - Install it via [comfy-cli](https://comfydocs.org/comfy-cli/getting-started) with `comfy node registry-install sd-perturbed-attention`
 
@@ -84,3 +84,4 @@ To use PAG together with [ComfyUI_TensorRT](https://github.com/comfyanonymous/Co
 ![trt-engines](res/trt-engines.png)
 
 ![trt-inference](res/trt-inference.png)
+
