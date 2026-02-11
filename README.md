@@ -77,3 +77,76 @@ As an alternative for A1111 WebUI you can use PAG implementation from [sd-webui-
 
 Deprecated: [ComfyUI_TensorRT](https://github.com/comfyanonymous/ComfyUI_TensorRT) is unmaintained.
 
+
+## Citation
+```
+@misc{ahn2025selfrectifyingdiffusionsamplingperturbedattention,
+      title={Self-Rectifying Diffusion Sampling with Perturbed-Attention Guidance},
+      author={Donghoon Ahn and Hyoungwon Cho and Jaewon Min and Wooseok Jang and Jungwoo Kim and SeonHwa Kim and Hyun Hee Park and Kyong Hwan Jin and Seungryong Kim},
+      year={2025},
+      eprint={2403.17377},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2403.17377},
+}
+
+@misc{hong2024smoothedenergyguidanceguiding,
+      title={Smoothed Energy Guidance: Guiding Diffusion Models with Reduced Energy Curvature of Attention},
+      author={Susung Hong},
+      year={2024},
+      eprint={2408.00760},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2408.00760},
+}
+
+@misc{adaloglou2025guidingdiffusionmodelusing,
+      title={Guiding a diffusion model using sliding windows},
+      author={Nikolas Adaloglou and Tim Kaiser and Damir Iagudin and Markus Kollmann},
+      year={2025},
+      eprint={2411.10257},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2411.10257},
+}
+
+@misc{kim2025pladispushinglimitsattention,
+      title={PLADIS: Pushing the Limits of Attention in Diffusion Models at Inference Time by Leveraging Sparsity},
+      author={Kwanyoung Kim and Byeongsu Sim},
+      year={2025},
+      eprint={2503.07677},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2503.07677},
+}
+
+@misc{chen2025normalizedattentionguidanceuniversal,
+      title={Normalized Attention Guidance: Universal Negative Guidance for Diffusion Models},
+      author={Dar-Yen Chen and Hmrishav Bandyopadhyay and Kai Zou and Yi-Zhe Song},
+      year={2025},
+      eprint={2505.21179},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2505.21179},
+}
+
+@misc{rajabi2025tokenperturbationguidancediffusion,
+      title={Token Perturbation Guidance for Diffusion Models},
+      author={Javad Rajabi and Soroush Mehraban and Seyedmorteza Sadat and Babak Taati},
+      year={2025},
+      eprint={2506.10036},
+      archivePrefix={arXiv},
+      primaryClass={cs.GR},
+      url={https://arxiv.org/abs/2506.10036},
+}
+
+@misc{sadat2025guidancefrequencydomainenables,
+      title={Guidance in the Frequency Domain Enables High-Fidelity Sampling at Low CFG Scales},
+      author={Seyedmorteza Sadat and Tobias Vontobel and Farnood Salehi and Romann M. Weber},
+      year={2025},
+      eprint={2506.19713},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2506.19713},
+}
+```
