@@ -313,3 +313,16 @@ class SlidingWindowGuidanceAdvanced:
         m.set_model_sampler_post_cfg_function(post_cfg_function)
 
         return (m,)
+
+
+NODE_CLASS_MAPPINGS = {
+    "PerturbedAttention": PerturbedAttention,
+    "SmoothedEnergyGuidanceAdvanced": SmoothedEnergyGuidanceAdvanced,
+    "SlidingWindowGuidanceAdvanced": SlidingWindowGuidanceAdvanced,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "PerturbedAttention": "Perturbed-Attention Guidance (Advanced)",
+    "SmoothedEnergyGuidanceAdvanced": "Smoothed Energy Guidance (Advanced)",
+    "SlidingWindowGuidanceAdvanced": "Sliding Window Guidance (Advanced)",
+}

@@ -1,7 +1,6 @@
-from typing import Any
+from typing import Any, Callable
 
 import torch
-from torch import nn
 
 from comfy.comfy_types.node_typing import IO, ComfyNodeABC, InputTypeDict
 from comfy.ldm.modules.attention import BasicTransformerBlock
@@ -14,23 +13,23 @@ from .guidance_utils import parse_unet_blocks, rescale_guidance, set_model_optio
 TPG_OPTION = "tpg"
 
 
-# Implementation of 2506.10036 'Token Perturbation Guidance for Diffusion Models'
-class TPGTransformerWrapper(nn.Module):
-    def __init__(self, transformer_block: BasicTransformerBlock) -> None:
-        super().__init__()
-        self.wrapped_block = transformer_block
+def shuffle_tokens(x: torch.Tensor):
+    # ComfyUI's torch.manual_seed generator should produce the same results here.
+    permutation = torch.randperm(x.shape[1], device=x.device)
+    return x[:, permutation]
 
-    def shuffle_tokens(self, x: torch.Tensor):
-        # ComfyUI's torch.manual_seed generator should produce the same results here.
-        permutation = torch.randperm(x.shape[1], device=x.device)
-        return x[:, permutation]
 
-    def forward(self, x: torch.Tensor, context: torch.Tensor | None = None, transformer_options: dict[str, Any] = {}):
+def tpg_forward_wrapper(forward_orig: Callable):
+    @torch.no_grad
+    def forward(x: torch.Tensor, context: torch.Tensor | None = None, transformer_options: dict[str, Any] = {}):
         is_tpg = transformer_options.get(TPG_OPTION, False)
-        x_ = self.shuffle_tokens(x) if is_tpg else x
-        return self.wrapped_block(x_, context=context, transformer_options=transformer_options)
+        x_tpg = shuffle_tokens(x) if is_tpg else x
+        return forward_orig(x_tpg, context=context, transformer_options=transformer_options)
+
+    return forward
 
 
+# Implementation of 2506.10036 'Token Perturbation Guidance for Diffusion Models'
 class TokenPerturbationGuidance(ComfyNodeABC):
     @classmethod
     def INPUT_TYPES(cls) -> InputTypeDict:
@@ -72,14 +71,10 @@ class TokenPerturbationGuidance(ComfyNodeABC):
 
         # Patch transformer blocks with TPG wrapper
         for name, module in inner_model.diffusion_model.named_modules():
-            if (
-                isinstance(module, BasicTransformerBlock)
-                and not "wrapped_block" in name
-                and (block_names is None or name in block_names)
-            ):
-                # Potential memory leak?
-                wrapper = TPGTransformerWrapper(module)
-                m.add_object_patch(f"diffusion_model.{name}", wrapper)
+            if isinstance(module, BasicTransformerBlock) and (block_names is None or name in block_names):
+                forward_orig = module.forward
+                forward_tpg = tpg_forward_wrapper(forward_orig)
+                m.add_object_patch(f"diffusion_model.{name}.forward", forward_tpg)
 
         def post_cfg_function(args):
             """CFG+TPG"""
@@ -98,9 +93,7 @@ class TokenPerturbationGuidance(ComfyNodeABC):
                 return cfg_result
 
             # Enable TPG in patched transformer blocks
-            for name, module in model.diffusion_model.named_modules():
-                if isinstance(module, TPGTransformerWrapper):
-                    set_model_options_value(model_options, TPG_OPTION, True)
+            set_model_options_value(model_options, TPG_OPTION, True)
 
             (tpg_cond_pred,) = calc_cond_batch(model, [cond], x, sigma, model_options)
 

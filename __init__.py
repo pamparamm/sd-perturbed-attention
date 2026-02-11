@@ -1,25 +1,25 @@
-from . import nag_nodes, tpg_nodes, pladis_nodes
-from .pag_nodes import PerturbedAttention, SlidingWindowGuidanceAdvanced, SmoothedEnergyGuidanceAdvanced
-from .pag_trt_nodes import TRTAttachPag, TRTPerturbedAttention
+try:
+    from typing_extensions import override
 
-NODE_CLASS_MAPPINGS = {
-    "PerturbedAttention": PerturbedAttention,
-    "SmoothedEnergyGuidanceAdvanced": SmoothedEnergyGuidanceAdvanced,
-    "SlidingWindowGuidanceAdvanced": SlidingWindowGuidanceAdvanced,
-    "TRTAttachPag": TRTAttachPag,
-    "TRTPerturbedAttention": TRTPerturbedAttention,
-    **nag_nodes.NODE_CLASS_MAPPINGS,
-    **tpg_nodes.NODE_CLASS_MAPPINGS,
-    **pladis_nodes.NODE_CLASS_MAPPINGS,
-}
+    from comfy_api.latest import ComfyExtension, io
 
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "PerturbedAttention": "Perturbed-Attention Guidance (Advanced)",
-    "SmoothedEnergyGuidanceAdvanced": "Smoothed Energy Guidance (Advanced)",
-    "SlidingWindowGuidanceAdvanced": "Sliding Window Guidance (Advanced)",
-    "TRTAttachPag": "TensorRT Attach PAG",
-    "TRTPerturbedAttention": "TensorRT Perturbed-Attention Guidance",
-    **nag_nodes.NODE_DISPLAY_NAME_MAPPINGS,
-    **tpg_nodes.NODE_DISPLAY_NAME_MAPPINGS,
-    **pladis_nodes.NODE_DISPLAY_NAME_MAPPINGS,
-}
+    from . import nag_nodes, pag_nodes, pladis_nodes, tpg_nodes, fdg_nodes
+    from .compat.utils import v3_schema_stub
+
+    class SDPerturbedAttentionExtension(ComfyExtension):
+        @override
+        async def get_node_list(self) -> list[type[io.ComfyNode]]:
+            # TODO convert more nodes to v3
+            return [
+                *v3_schema_stub(pag_nodes),
+                *v3_schema_stub(nag_nodes),
+                *v3_schema_stub(tpg_nodes),
+                *v3_schema_stub(pladis_nodes),
+                *fdg_nodes.NODES,
+            ]
+
+    async def comfy_entrypoint():  # ComfyUI calls this to load your extension and its nodes.
+        return SDPerturbedAttentionExtension()
+
+except ImportError:
+    pass

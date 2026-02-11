@@ -239,3 +239,10 @@ def snf_guidance(t_guidance: torch.Tensor, s_guidance: torch.Tensor):
 
     snf = torch.gather(guidance_stacked, dim=0, index=argeps).squeeze(0)
     return snf
+
+
+def project(v0: torch.Tensor, v1: torch.Tensor):
+    v1 = F.normalize(v1, dim=[-1, -2, -3])  # type: ignore
+    v0_parallel = (v0 * v1).sum(dim=[-1, -2, -3], keepdim=True) * v1
+    v0_orthogonal = v0 - v0_parallel
+    return v0_parallel, v0_orthogonal
