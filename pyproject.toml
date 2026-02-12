@@ -1,7 +1,7 @@
 [project]
 name = "sd-perturbed-attention"
 description = "Perturbed-Attention Guidance (PAG), Smoothed Energy Guidance (SEG), Sliding Window Guidance (SWG), PLADIS, Normalized Attention Guidance (NAG), Token Perturbation Guidance (TPG), Frequency-Decoupled Guidance (FDG) for ComfyUI and SD reForge."
-version = "1.2.16"
+version = "1.2.17"
 license = { text = "MIT License" }
 
 [project.urls]
