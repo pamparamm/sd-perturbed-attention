@@ -246,3 +246,8 @@ def project(v0: torch.Tensor, v1: torch.Tensor):
     v0_parallel = (v0 * v1).sum(dim=[-1, -2, -3], keepdim=True) * v1
     v0_orthogonal = v0 - v0_parallel
     return v0_parallel, v0_orthogonal
+
+
+def get_option_group(model_options: dict[str, Any], group_key: str) -> dict[str, Any]:
+    model_options[group_key] = model_options.get(group_key, {})
+    return model_options[group_key]

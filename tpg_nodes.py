@@ -106,7 +106,7 @@ class TokenPerturbationGuidance(ComfyNodeABC):
 
             return cfg_result + rescale_guidance(tpg, cond_pred, cfg_result, rescale, rescale_mode)
 
-        m.set_model_sampler_post_cfg_function(post_cfg_function, rescale_mode == "snf")
+        m.set_model_sampler_post_cfg_function(post_cfg_function, disable_cfg1_optimization=rescale_mode == "snf")
 
         return (m,)
 

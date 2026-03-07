@@ -9,6 +9,8 @@ Implementation of
 - [Normalized Attention Guidance: Universal Negative Guidance for Diffusion Models](https://arxiv.org/abs/2505.21179) (ComfyUI-only, has a description inside ComfyUI)
 - [Token Perturbation Guidance for Diffusion Models](https://arxiv.org/abs/2506.10036) (ComfyUI-only)
 - Frequency-Decoupled Guidance (FDG) from [Guidance in the Frequency Domain Enables High-Fidelity Sampling at Low CFG Scales](https://arxiv.org/abs/2506.19713) (ComfyUI-only)
+- Momentum Guidance (MG) from [Momentum Guidance: Plug-and-Play Guidance for Flow Models](https://arxiv.org/abs/2602.20360) (ComfyUI-only, not limited to SD1.5/SDXL)
+- Sliding Mode Control CFG (SMC-CFG) from [CFG-Ctrl: Control-Based Classifier-Free Diffusion Guidance](https://arxiv.org/abs/2603.03281) (ComfyUI-only, not limited to SD1.5/SDXL)
 
 as an extension for [ComfyUI](https://github.com/Comfy-Org/ComfyUI) and [SD WebUI (reForge)](https://github.com/Panchovix/stable-diffusion-webui-reForge).
 
@@ -148,5 +150,25 @@ Deprecated: [ComfyUI_TensorRT](https://github.com/comfyanonymous/ComfyUI_TensorR
       archivePrefix={arXiv},
       primaryClass={cs.LG},
       url={https://arxiv.org/abs/2506.19713},
+}
+
+@misc{liao2026momentumguidanceplugandplayguidance,
+      title={Momentum Guidance: Plug-and-Play Guidance for Flow Models},
+      author={Runlong Liao and Jian Yu and Baiyu Su and Chi Zhang and Lizhang Chen and Qiang Liu},
+      year={2026},
+      eprint={2602.20360},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2602.20360},
+}
+
+@misc{wang2026cfgctrlcontrolbasedclassifierfreediffusion,
+      title={CFG-Ctrl: Control-Based Classifier-Free Diffusion Guidance},
+      author={Hanyang Wang and Yiyang Liu and Jiawei Chi and Fangfu Liu and Ran Xue and Yueqi Duan},
+      year={2026},
+      eprint={2603.03281},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2603.03281},
 }
 ```
