@@ -29,7 +29,7 @@ class MomentumGuidance(io.ComfyNode):
                     max=100.0,
                     step=0.01,
                     round=0.001,
-                    tooltip="Momentum (alpha) hyperparameter",
+                    tooltip="Momentum (alpha) hyperparameter. Controls the scale/strength of Momentum Guidance: setting value to 0.0 completely disables MG. 0.5 should be optimal for MG+CFG combination in most scenarios",
                 ),
                 io.Float.Input(
                     "ema",
@@ -38,7 +38,7 @@ class MomentumGuidance(io.ComfyNode):
                     max=1.0,
                     step=0.01,
                     round=0.001,
-                    tooltip="EMA (beta) hyperparameter",
+                    tooltip="EMA (beta) hyperparameter. Consider tuning this before tuning `momentum`",
                 ),
             ],
             outputs=[
@@ -69,6 +69,7 @@ class MomentumGuidance(io.ComfyNode):
 
         m = model.clone()
         m.set_model_sampler_post_cfg_function(mg_post_cfg_function)
+
         return io.NodeOutput(m)
 
 

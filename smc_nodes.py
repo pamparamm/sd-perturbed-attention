@@ -68,19 +68,21 @@ class SlidingModeControlCFG(io.ComfyNode):
 
             s_t = (e_t - e_t_prev) + l * e_t_prev
 
-            e_t_delta = -k * (s_t / vector_norm(s_t, dim=(1, 2, 3), keepdim=True))
-            # e_t_delta = -k * torch.sign(s_t)
+            # I'm using `unit_2(s_t)` instead of `sign(s_t)` here, since Table 4. from the original paper states that sign(s_t)==unit_2(s_t), and for some reason the former doesn't work at all (?_?).
+            s_t_unit = s_t / vector_norm(s_t, dim=(1, 2, 3), keepdim=True)
+            e_t_delta = -k * s_t_unit
+
             e_t_upd = e_t + e_t_delta
 
-            x_smc = uncond_denoised + cond_scale * e_t_upd
+            smc_group[cls.E_T_PREV_KEY] = e_t_upd
 
-            smc_group[cls.E_T_PREV_KEY] = e_t
-            # smc_group[cls.E_T_PREV_KEY] = e_t_upd
+            x_smc = uncond_denoised + cond_scale * e_t_upd
 
             return x_orig - x_smc
 
         m = model.clone()
         m.set_model_sampler_cfg_function(smc_cfg_function)
+
         return io.NodeOutput(m)
 
 
